@@ -1,0 +1,1 @@
+To start this app run 'docker compose up --build' in console
