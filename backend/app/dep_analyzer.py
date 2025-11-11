@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Универсальный анализатор зависимостей Python проектов
+Универсальный анализатор зависимостей Python проектов с поддержкой FastAPI эндпоинтов
 
 Использование:
     python dep_analyzer.py [папка_проекта] [опции]
@@ -8,7 +8,7 @@
 Примеры:
     python dep_analyzer.py ./myproject
     python dep_analyzer.py ./src --include-external --exclude tests,venv
-    python dep_analyzer.py ./backend --output-format json,dot
+    python dep_analyzer.py ./backend --output-format json,dot --analyze-fastapi
 """
 
 import os
@@ -18,6 +18,16 @@ import argparse
 import re
 from pathlib import Path
 from collections import defaultdict
+from typing import Dict, Any, List, Optional, Set, Tuple
+
+# Импорт FastAPI анализатора (если доступен)
+try:
+    from fastapi_analyzer import FastAPIEndpointAnalyzer
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    FASTAPI_AVAILABLE = False
+    print("ℹ️  Модуль fastapi_analyzer не найден. Анализ FastAPI эндпоинтов недоступен.")
+    print("💡 Чтобы включить анализ FastAPI, создайте файл fastapi_analyzer.py рядом с этим скриптом.")
 
 def parse_arguments():
     """Парсит аргументы командной строки"""
@@ -38,6 +48,10 @@ def parse_arguments():
                         help='Показывать подробную информацию')
     parser.add_argument('--max-depth', type=int, default=0,
                         help='Максимальная глубина анализа (0 = без ограничений)')
+    parser.add_argument('--analyze-fastapi', action='store_true',
+                        help='Анализировать FastAPI эндпоинты в проекте')
+    parser.add_argument('--fastapi-file-patterns', type=str, default='*api*.py,*router*.py,*endpoint*.py,main.py',
+                        help='Шаблоны файлов для поиска FastAPI эндпоинтов (через запятую)')
     
     return parser.parse_args()
 
@@ -144,22 +158,23 @@ def analyze_file_dependencies(file_path, module_to_file, file_to_module, include
         set: Множество зависимостей
     """
     dependencies = set()
-    rel_path = file_path.relative_to(file_path.parent.parent.parent).as_posix() if len(file_path.parts) > 3 else file_path.name
+    rel_path = str(file_path.relative_to(file_path.parent.parent)) if len(file_path.parts) > 2 else file_path.name
     
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             tree = ast.parse(f.read(), filename=str(file_path))
     except (SyntaxError, UnicodeDecodeError, FileNotFoundError) as e:
-        if args.verbose:
-            print(f"⚠️  Ошибка при парсинге {file_path}: {e}")
         return dependencies
     
     # Определяем текущий модуль
     current_module = file_to_module.get(rel_path)
     if not current_module:
         # Пробуем создать модульное имя из пути
-        module_name = str(file_path.relative_to(file_path.parent.parent)).replace('.py', '').replace('/', '.')
-        current_module = module_name
+        try:
+            module_name = str(file_path.relative_to(file_path.parent.parent)).replace('.py', '').replace('/', '.')
+            current_module = module_name
+        except:
+            current_module = rel_path.replace('.py', '').replace('/', '.')
     
     for node in ast.walk(tree):
         try:
@@ -183,8 +198,6 @@ def analyze_file_dependencies(file_path, module_to_file, file_to_module, include
                     if dep_file:
                         dependencies.add(dep_file)
         except Exception as e:
-            if args.verbose:
-                print(f"⚠️  Ошибка при анализе узла в {file_path}: {e}")
             continue
     
     return dependencies
@@ -210,16 +223,8 @@ def analyze_project(project_path, include_external=False, excluded_dirs=None, ro
     if not project_root.exists():
         raise FileNotFoundError(f"Директория {project_root} не существует")
     
-    print(f"📁 Анализируем проект: {project_root}")
-    
     # Получаем структуру проекта
     module_to_file, file_to_module = get_project_structure(project_root, root_module, excluded_dirs)
-    
-    if not module_to_file:
-        print("⚠️  Не найдено Python модулей для анализа")
-        return {}
-    
-    print(f"📦 Найдено {len(module_to_file)} модулей")
     
     # Анализируем зависимости
     dependencies = defaultdict(list)
@@ -237,18 +242,33 @@ def analyze_project(project_path, include_external=False, excluded_dirs=None, ro
         if deps:
             dependencies[rel_path] = list(deps)
     
-    print(f"✅ Обработано {processed_files} файлов")
-    print(f"🔗 Найдено {len(dependencies)} файлов с зависимостями")
-    
     return dict(dependencies)
 
-def generate_dot_file(dependencies, output_file):
+def analyze_fastapi_endpoints(project_path: Path, file_patterns: List[str]) -> Dict[str, Any]:
+    """
+    Анализирует FastAPI эндпоинты в проекте
+    
+    Args:
+        project_path: Путь к проекту
+        file_patterns: Список шаблонов файлов для анализа
+    
+    Returns:
+        Словарь с результатами анализа
+    """
+    if not FASTAPI_AVAILABLE:
+        return {}
+    
+    analyzer = FastAPIEndpointAnalyzer()
+    return analyzer.analyze_project(project_path, file_patterns)
+
+def generate_dot_file(dependencies, output_file, fastapi_endpoints=None):
     """
     Генерирует DOT файл для визуализации
     
     Args:
         dependencies (dict): Словарь зависимостей
         output_file (str): Имя выходного файла
+        fastapi_endpoints (dict): Словарь с FastAPI эндпоинтами (опционально)
     """
     dot_content = [
         'digraph G {',
@@ -266,6 +286,11 @@ def generate_dot_file(dependencies, output_file):
         for dep in deps:
             all_files.add(dep)
     
+    # Добавляем файлы с FastAPI эндпоинтами (если есть)
+    if fastapi_endpoints:
+        for file_path in fastapi_endpoints.get('endpoints_by_file', {}):
+            all_files.add(file_path)
+    
     if not all_files:
         dot_content.append('    "Нет зависимостей" [shape=box, fillcolor="#ffcccc"];')
         dot_content.append('}')
@@ -280,16 +305,39 @@ def generate_dot_file(dependencies, output_file):
         cluster_id = 0
         for dir_path, files in dir_nodes.items():
             if dir_path != '.' and len(files) > 1:
+                # Проверяем, есть ли в этой директории FastAPI эндпоинты
+                has_endpoints = False
+                if fastapi_endpoints:
+                    for file in files:
+                        if file in fastapi_endpoints.get('endpoints_by_file', {}):
+                            has_endpoints = True
+                            break
+                
                 dot_content.append(f'    subgraph cluster_{cluster_id} {{')
-                dot_content.append(f'        label="{dir_path}";')
+                label = f"{dir_path} {'🚀' if has_endpoints else ''}"
+                dot_content.append(f'        label="{label}";')
                 dot_content.append(f'        style="filled,rounded";')
-                dot_content.append(f'        fillcolor="#f0f7ff";')
-                dot_content.append(f'        color="#a0c8ff";')
+                dot_content.append(f'        fillcolor="{"#e6f7ff" if has_endpoints else "#f0f7ff"}";')
+                dot_content.append(f'        color="{"#4da6ff" if has_endpoints else "#a0c8ff"}";')
                 
                 for file in files:
                     node_name = re.sub(r'[^a-zA-Z0-9_]', '_', file)
+                    
+                    # Проверяем, есть ли в файле FastAPI эндпоинты
+                    endpoint_count = 0
+                    if fastapi_endpoints and file in fastapi_endpoints.get('endpoints_by_file', {}):
+                        endpoint_count = len(fastapi_endpoints['endpoints_by_file'][file])
+                    
                     label = Path(file).name
-                    dot_content.append(f'        "{node_name}" [label="{label}"];')
+                    if endpoint_count > 0:
+                        label = f"{label}\\n🚀 {endpoint_count} endpoints"
+                        fillcolor = "#d6eaff"
+                        shape = "box3d"
+                    else:
+                        fillcolor = "#e8f4f8"
+                        shape = "box"
+                    
+                    dot_content.append(f'        "{node_name}" [label="{label}", fillcolor="{fillcolor}", shape={shape}];')
                 
                 dot_content.append('    }')
                 cluster_id += 1
@@ -314,21 +362,31 @@ def generate_dot_file(dependencies, output_file):
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write('\n'.join(dot_content))
     
-    print(f"✅ DOT файл сохранен в {output_file}")
     return output_file
 
-def generate_json_file(dependencies, output_file):
+def generate_json_file(dependencies, output_file, fastapi_endpoints=None):
     """
-    Генерирует JSON файл с зависимостями
+    Генерирует JSON файл с зависимостями и FastAPI эндпоинтами
     
     Args:
         dependencies (dict): Словарь зависимостей
         output_file (str): Имя выходного файла
+        fastapi_endpoints (dict): Словарь с FastAPI эндпоинтами (опционально)
     """
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(dependencies, f, indent=2, ensure_ascii=False)
+    result = {
+        'dependencies': dependencies,
+        'metadata': {
+            'generated_by': 'Universal Python Dependency Analyzer',
+            'files_with_dependencies': len(dependencies)
+        }
+    }
     
-    print(f"✅ JSON файл сохранен в {output_file}")
+    if fastapi_endpoints:
+        result['fastapi_endpoints'] = fastapi_endpoints
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+    
     return output_file
 
 def generate_svg_from_dot(dot_file, svg_file):
@@ -342,21 +400,19 @@ def generate_svg_from_dot(dot_file, svg_file):
     try:
         import subprocess
         subprocess.run(['dot', '-Tsvg', dot_file, '-o', svg_file], check=True)
-        print(f"✅ SVG файл сохранен в {svg_file}")
         return True
     except (ImportError, FileNotFoundError, subprocess.CalledProcessError) as e:
-        print(f"⚠️  Не удалось сгенерировать SVG: {e}")
-        print("💡 Установите Graphviz: sudo apt install graphviz")
         return False
 
 def main():
-    global args
     args = parse_arguments()
     
     # Обработка исключений
     excluded_dirs = [d.strip() for d in args.exclude.split(',') if d.strip()]
     
     try:
+        print(f"🔍 Анализируем проект: {Path(args.project_path).resolve()}")
+        
         # Анализ зависимостей
         dependencies = analyze_project(
             project_path=args.project_path,
@@ -366,21 +422,42 @@ def main():
             max_depth=args.max_depth
         )
         
+        print(f"✅ Найдено {len(dependencies)} файлов с зависимостями")
+        
+        # Анализ FastAPI эндпоинтов (если запрошено)
+        fastapi_endpoints = {}
+        if args.analyze_fastapi and FASTAPI_AVAILABLE:
+            print("🔍 Анализируем FastAPI эндпоинты...")
+            file_patterns = [p.strip() for p in args.fastapi_file_patterns.split(',') if p.strip()]
+            fastapi_endpoints = analyze_fastapi_endpoints(Path(args.project_path), file_patterns)
+            
+            if fastapi_endpoints:
+                stats = fastapi_endpoints.get('stats', {})
+                print(f"✅ Найдено {stats.get('total_endpoints', 0)} FastAPI эндпоинтов в {stats.get('total_files_analyzed', 0)} файлах")
+            else:
+                print("ℹ️  FastAPI эндпоинты не найдены")
+        elif args.analyze_fastapi and not FASTAPI_AVAILABLE:
+            print("⚠️  Анализ FastAPI недоступен. Установите модуль fastapi_analyzer.py")
+        
         # Генерация выходных файлов
         output_formats = [fmt.strip() for fmt in args.output_format.split(',') if fmt.strip()]
         
         if 'json' in output_formats:
-            generate_json_file(dependencies, f"{args.output}.json")
+            generate_json_file(dependencies, f"{args.output}.json", fastapi_endpoints)
         
         if 'dot' in output_formats:
-            dot_file = generate_dot_file(dependencies, f"{args.output}.dot")
+            dot_file = generate_dot_file(dependencies, f"{args.output}.dot", fastapi_endpoints)
             
             # Автоматически генерируем SVG, если указан формат или есть dot
-            if 'svg' in output_formats or len(output_formats) == 1:
-                generate_svg_from_dot(dot_file, f"{args.output}.svg")
+            if 'svg' in output_formats:
+                svg_generated = generate_svg_from_dot(dot_file, f"{args.output}.svg")
+                if svg_generated:
+                    print(f"✅ SVG файл сохранен в {args.output}.svg")
+                else:
+                    print("⚠️  Не удалось сгенерировать SVG файл")
         
         # Показываем пример зависимостей
-        if dependencies and args.verbose:
+        if args.verbose and dependencies:
             print("\n📋 Пример зависимостей:")
             for i, (file, deps_list) in enumerate(dependencies.items()):
                 if i >= 3:  # Показываем только первые 3 для краткости
@@ -390,6 +467,12 @@ def main():
                     print(f"    └── {dep}")
             if len(dependencies) > 3:
                 print(f"  ... и ещё {len(dependencies) - 3} файлов")
+        
+        # Показываем отчет по FastAPI эндпоинтам
+        if args.verbose and fastapi_endpoints and FASTAPI_AVAILABLE:
+            analyzer = FastAPIEndpointAnalyzer()
+            report = analyzer.generate_endpoints_report(fastapi_endpoints)
+            print("\n" + report)
     
     except Exception as e:
         print(f"❌ Критическая ошибка: {e}")
