@@ -3,118 +3,27 @@ import json
 from typing import Dict, Any, Set, List
 
 # TODO: process import using *
+# TODO: check __tablename__ in class (DB)
+# TODO: process handlers
 
 """
 {
   "modules": [
     {
-      "module": "backend/app/test/routing.py",
-      "tree": {
-        "children": [
-          {
-            "name": "read_items",
-            "type": "handler",
-            "lineno": 14,
-            "children": [],
-            "args": [
-              "session",
-              "current_user",
-              "skip",
-              "limit"
-            ],
-            "calls": [
-              {
-                "function": "ItemsPublic",
-                "module": "backend.app.models",
-                "lineno": 41,
-                "type": "internal"
-              }
-            ],
-            "http_method": "get",
-            "path": "/",
-            "decorators": [
-              "router.get"
-            ]
-          },
-          {
-            "name": "read_item",
-            "type": "handler",
-            "lineno": 45,
-            "children": [],
-            "args": [
-              "session",
-              "current_user",
-              "id"
-            ],
-            "calls": [],
-            "http_method": "get",
-            "path": "/{id}",
-            "decorators": [
-              "router.get"
-            ]
-          },
-          {
-            "name": "create_item",
-            "type": "handler",
-            "lineno": 58,
-            "children": [],
-            "args": [],
-            "calls": [
-              {
-                "function": "model_validate",
-                "module": "backend.app.models",
-                "lineno": 64,
-                "type": "internal"
-              }
-            ],
-            "http_method": "post",
-            "path": "/",
-            "decorators": [
-              "router.post"
-            ]
-          },
-          {
-            "name": "update_item",
-            "type": "handler",
-            "lineno": 72,
-            "children": [],
-            "args": [],
-            "calls": [],
-            "http_method": "put",
-            "path": "/{id}",
-            "decorators": [
-              "router.put"
-            ]
-          },
-          {
-            "name": "delete_item",
-            "type": "handler",
-            "lineno": 96,
-            "children": [],
-            "args": [
-              "session",
-              "current_user",
-              "id"
-            ],
-            "calls": [
-              {
-                "function": "Message",
-                "module": "backend.app.models",
-                "lineno": 109,
-                "type": "internal"
-              }
-            ],
-            "http_method": "delete",
-            "path": "/{id}",
-            "decorators": [
-              "router.delete"
-            ]
-          }
-        ]
-      }
+      "module": "abc/bar/foo.py",
     },
     {
-      "module": "backend/app/test/file_example.py",
+      "module": "abc/bar/hoo.py",
+    },
+    .....
+  ]
+}
+
+Expecting output: json, e.g.
+{
+  "modules": [
+    {
+      "module": "backend.app.test.file_example",
       "tree": {
         "children": [
           {
@@ -207,7 +116,7 @@ from typing import Dict, Any, Set, List
       }
     },
     {
-      "module": "backend/app/test/file_example_imported.py",
+      "module": "backend.app.test.file_example_imported",
       "tree": {
         "children": [
           {
@@ -222,174 +131,399 @@ from typing import Dict, Any, Set, List
       }
     },
     {
-      "module": "backend/app/models.py",
+      "module": "backend.app.test.models",
       "tree": {
         "children": [
           {
-            "name": "Service",
+            "name": "UserBase",
             "type": "sql_class",
             "lineno": 8,
             "children": [],
             "calls": [],
-            "table_name": "services",
             "model_fields": [
               {
-                "name": "id",
-                "type": "Integer"
+                "name": "email",
+                "type": "EmailStr",
+                "field_attrs": {
+                  "unique": true,
+                  "index": true,
+                  "max_length": 255
+                }
               },
               {
-                "name": "name",
-                "type": "String"
+                "name": "is_active",
+                "type": "bool"
               },
               {
-                "name": "type",
-                "type": "String"
+                "name": "is_superuser",
+                "type": "bool"
               },
               {
-                "name": "meta",
-                "type": "JSON"
+                "name": "full_name",
+                "type": "unknown",
+                "field_attrs": {
+                  "default": null,
+                  "max_length": 255
+                }
               }
             ]
           },
           {
-            "name": "File",
+            "name": "UserCreate",
             "type": "sql_class",
-            "lineno": 15,
+            "lineno": 16,
             "children": [],
             "calls": [],
-            "table_name": "files",
             "model_fields": [
               {
-                "name": "id",
-                "type": "Integer"
-              },
-              {
-                "name": "path",
-                "type": "String"
+                "name": "password",
+                "type": "str",
+                "field_attrs": {
+                  "min_length": 8,
+                  "max_length": 128
+                }
               }
             ]
           },
           {
-            "name": "Handler",
+            "name": "UserRegister",
             "type": "sql_class",
             "lineno": 20,
             "children": [],
             "calls": [],
-            "table_name": "handlers",
             "model_fields": [
               {
-                "name": "id",
-                "type": "Integer"
+                "name": "email",
+                "type": "EmailStr",
+                "field_attrs": {
+                  "max_length": 255
+                }
               },
               {
-                "name": "name",
-                "type": "String"
+                "name": "password",
+                "type": "str",
+                "field_attrs": {
+                  "min_length": 8,
+                  "max_length": 128
+                }
               },
               {
-                "name": "file_id",
-                "type": "Integer"
-              },
-              {
-                "name": "lineno",
-                "type": "Integer"
-              },
-              {
-                "name": "meta",
-                "type": "JSON"
-              },
-              {
-                "name": "file",
-                "type": "unknown"
+                "name": "full_name",
+                "type": "unknown",
+                "field_attrs": {
+                  "default": null,
+                  "max_length": 255
+                }
               }
             ]
           },
           {
-            "name": "Endpoint",
+            "name": "UserUpdate",
             "type": "sql_class",
-            "lineno": 29,
+            "lineno": 27,
             "children": [],
             "calls": [],
-            "table_name": "endpoints",
             "model_fields": [
               {
-                "name": "id",
-                "type": "Integer"
+                "name": "email",
+                "type": "unknown",
+                "field_attrs": {
+                  "default": null,
+                  "max_length": 255
+                }
               },
               {
-                "name": "path",
-                "type": "String"
-              },
-              {
-                "name": "method",
-                "type": "String"
-              },
-              {
-                "name": "handler_id",
-                "type": "Integer"
-              },
-              {
-                "name": "handler",
-                "type": "unknown"
+                "name": "password",
+                "type": "unknown",
+                "field_attrs": {
+                  "default": null,
+                  "min_length": 8,
+                  "max_length": 128
+                }
               }
             ]
           },
           {
-            "name": "CFGNode",
+            "name": "UserUpdateMe",
+            "type": "sql_class",
+            "lineno": 32,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "full_name",
+                "type": "unknown",
+                "field_attrs": {
+                  "default": null,
+                  "max_length": 255
+                }
+              },
+              {
+                "name": "email",
+                "type": "unknown",
+                "field_attrs": {
+                  "default": null,
+                  "max_length": 255
+                }
+              }
+            ]
+          },
+          {
+            "name": "UpdatePassword",
             "type": "sql_class",
             "lineno": 37,
             "children": [],
             "calls": [],
-            "table_name": "cfg_nodes",
+            "model_fields": [
+              {
+                "name": "current_password",
+                "type": "str",
+                "field_attrs": {
+                  "min_length": 8,
+                  "max_length": 128
+                }
+              },
+              {
+                "name": "new_password",
+                "type": "str",
+                "field_attrs": {
+                  "min_length": 8,
+                  "max_length": 128
+                }
+              }
+            ]
+          },
+          {
+            "name": "User",
+            "type": "sql_class",
+            "lineno": 43,
+            "children": [],
+            "calls": [],
             "model_fields": [
               {
                 "name": "id",
-                "type": "Integer"
+                "type": "uuid.UUID",
+                "field_attrs": {
+                  "default_factory": null,
+                  "primary_key": true
+                }
               },
               {
-                "name": "handler_id",
-                "type": "Integer"
+                "name": "hashed_password",
+                "type": "str"
               },
               {
-                "name": "label",
-                "type": "String"
+                "name": "items",
+                "type": "list[unknown]"
+              }
+            ]
+          },
+          {
+            "name": "UserPublic",
+            "type": "sql_class",
+            "lineno": 50,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "id",
+                "type": "uuid.UUID"
+              }
+            ]
+          },
+          {
+            "name": "UsersPublic",
+            "type": "sql_class",
+            "lineno": 54,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "data",
+                "type": "list[UserPublic]"
               },
               {
-                "name": "lineno",
-                "type": "Integer"
+                "name": "count",
+                "type": "int"
+              }
+            ]
+          },
+          {
+            "name": "ItemBase",
+            "type": "sql_class",
+            "lineno": 60,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "title",
+                "type": "str",
+                "field_attrs": {
+                  "min_length": 1,
+                  "max_length": 255
+                }
               },
               {
-                "name": "meta",
-                "type": "JSON"
+                "name": "description",
+                "type": "unknown",
+                "field_attrs": {
+                  "default": null,
+                  "max_length": 255
+                }
+              }
+            ]
+          },
+          {
+            "name": "ItemCreate",
+            "type": "sql_class",
+            "lineno": 66,
+            "children": [],
+            "calls": [],
+            "model_fields": []
+          },
+          {
+            "name": "ItemUpdate",
+            "type": "sql_class",
+            "lineno": 71,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "title",
+                "type": "unknown",
+                "field_attrs": {
+                  "default": null,
+                  "min_length": 1,
+                  "max_length": 255
+                }
+              }
+            ]
+          },
+          {
+            "name": "Item",
+            "type": "sql_class",
+            "lineno": 76,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "id",
+                "type": "uuid.UUID",
+                "field_attrs": {
+                  "default_factory": null,
+                  "primary_key": true
+                }
               },
               {
-                "name": "handler",
+                "name": "owner_id",
+                "type": "uuid.UUID",
+                "field_attrs": {
+                  "foreign_key": "user.id",
+                  "nullable": false,
+                  "ondelete": "CASCADE"
+                }
+              },
+              {
+                "name": "owner",
                 "type": "unknown"
               }
             ]
           },
           {
-            "name": "CFGEdge",
+            "name": "ItemPublic",
             "type": "sql_class",
-            "lineno": 46,
+            "lineno": 85,
             "children": [],
             "calls": [],
-            "table_name": "cfg_edges",
             "model_fields": [
               {
                 "name": "id",
-                "type": "Integer"
+                "type": "uuid.UUID"
               },
               {
-                "name": "src_id",
-                "type": "Integer"
+                "name": "owner_id",
+                "type": "uuid.UUID"
+              }
+            ]
+          },
+          {
+            "name": "ItemsPublic",
+            "type": "sql_class",
+            "lineno": 90,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "data",
+                "type": "list[ItemPublic]"
               },
               {
-                "name": "dst_id",
-                "type": "Integer"
+                "name": "count",
+                "type": "int"
+              }
+            ]
+          },
+          {
+            "name": "Message",
+            "type": "sql_class",
+            "lineno": 96,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "message",
+                "type": "str"
+              }
+            ]
+          },
+          {
+            "name": "Token",
+            "type": "sql_class",
+            "lineno": 101,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "access_token",
+                "type": "str"
               },
               {
-                "name": "label",
-                "type": "String"
+                "name": "token_type",
+                "type": "str"
+              }
+            ]
+          },
+          {
+            "name": "TokenPayload",
+            "type": "sql_class",
+            "lineno": 107,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "sub",
+                "type": "unknown"
+              }
+            ]
+          },
+          {
+            "name": "NewPassword",
+            "type": "sql_class",
+            "lineno": 111,
+            "children": [],
+            "calls": [],
+            "model_fields": [
+              {
+                "name": "token",
+                "type": "str"
+              },
+              {
+                "name": "new_password",
+                "type": "str",
+                "field_attrs": {
+                  "min_length": 8,
+                  "max_length": 128
+                }
               }
             ]
           }
@@ -414,34 +548,29 @@ class ProjectAnalyzer:
     def _build_module_mapping(self) -> Dict[str, str]:
         mapping = {}
         for module_info in self.input_data["modules"]:
-            file_path = module_info["module"]
-            
-            module_name = file_path[:-3].replace('/', '.')
-            
-            mapping[module_name] = module_name
-            
-            parts = module_name.split(".")
+            full_path = module_info["module"]
+            # add full path
+            mapping[full_path] = full_path
+            # add short path
+            parts = full_path.split(".")
             if parts:
                 short_name = parts[-1]
-                mapping[short_name] = module_name
-            
+                mapping[short_name] = full_path
+            # add prefixes
             for i in range(1, len(parts)):
                 prefix = ".".join(parts[:i])
-                mapping[prefix] = module_name
-                
+                mapping[prefix] = full_path
         return mapping
     
     def _first_pass(self):
         for module_info in self.input_data["modules"]:
-            file_path = module_info["module"]
+            module_name = module_info["module"]
+            filename = f"{module_name.replace('.', '/')}.py"
             
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(filename, 'r', encoding='utf-8') as file:
                 source_code = file.read()
             
             tree = ast.parse(source_code)
-            
-            module_name = file_path[:-3].replace('/', '.')
-            
             collector = DeclarationCollector(module_name, self.module_mapping)
             collector.visit(tree)
             
@@ -450,10 +579,10 @@ class ProjectAnalyzer:
                 'imports': collector.get_imports(),
                 'exports': collector.get_exports(),
                 'source_tree': tree,
-                'filename': file_path,
-                'original_path': file_path
+                'filename': filename
             }
             
+            # global index
             self._update_project_index(module_name, collector.get_declarations())
                 
     def analyze(self) -> str:
@@ -497,13 +626,11 @@ class ProjectAnalyzer:
         output = {"modules": []}
         
         for module_info in self.input_data["modules"]:
-            file_path = module_info["module"]
-            module_name = file_path[:-3].replace('/', '.') if file_path.endswith('.py') else file_path
-            
+            module_name = module_info["module"]
             module_data = self.modules_data.get(module_name, {})
             
             output_module = {
-                "module": file_path,
+                "module": module_name,
                 "tree": module_data.get('tree', {"children": []})
             }
             output["modules"].append(output_module)
@@ -522,104 +649,105 @@ class DeclarationCollector(ast.NodeVisitor):
     
     def visit_ClassDef(self, node: ast.ClassDef):
         class_type = "class"
-        table_name = None
         model_fields = []
         
-        for item in node.body:
-            if (isinstance(item, ast.Assign) and 
-                len(item.targets) == 1 and 
-                isinstance(item.targets[0], ast.Name) and 
-                item.targets[0].id == "__tablename__"):
-                
+        is_sql_model = False
+        for base in node.bases:
+            base_name = self._get_base_name(base)
+            if base_name == "SQLModel" or base_name in self.found_sql_models:
                 class_type = "sql_class"
-                table_name = self._get_string_value(item.value)
+                is_sql_model = True
+                self.found_sql_models.add(node.name)
                 break
         
-        if class_type == "sql_class":
+        for keyword in node.keywords:
+            if keyword.arg == 'table' and self._get_keyword_value(keyword) is True:
+                class_type = "sql_class"
+                is_sql_model = True
+                self.found_sql_models.add(node.name)
+                break
+        
+        if is_sql_model:
             model_fields = self._extract_model_fields(node)
         
         self.declarations[node.name] = {
-            'type': class_type,
+            'type': class_type,  # "class" или "sql_class"
             'lineno': node.lineno,
-            'table_name': table_name,
-            'model_fields': model_fields
+            'model_fields': model_fields  # поля для SQL-классов
         }
         self.generic_visit(node)
-    
-    def _get_string_value(self, node: ast.AST) -> str:
-        if isinstance(node, ast.Str):
-            return node.s
-        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            return node.value
-        return ""
     
     def _extract_model_fields(self, node: ast.ClassDef) -> List[Dict[str, Any]]:
         fields = []
         
         for item in node.body:
-            if isinstance(item, ast.Assign):
+            if isinstance(item, ast.AnnAssign):
+                field_info = self._parse_ann_assign_field(item)
+                if field_info:
+                    fields.append(field_info)
+            elif isinstance(item, ast.Assign):
                 field_info = self._parse_assign_field(item)
                 if field_info:
                     fields.append(field_info)
         
         return fields
     
+    def _parse_ann_assign_field(self, node: ast.AnnAssign) -> Dict[str, Any]:
+        if not isinstance(node.target, ast.Name):
+            return None
+        
+        field_name = node.target.id
+        field_type = self._get_type_annotation(node.annotation)
+        
+        field_info = {
+            "name": field_name,
+            "type": field_type
+        }
+        
+        if node.value:
+            field_attrs = self._analyze_field_value(node.value)
+            if field_attrs:
+                field_info["field_attrs"] = field_attrs
+        
+        return field_info
+
     def _parse_assign_field(self, node: ast.Assign) -> Dict[str, Any]:
         if len(node.targets) != 1 or not isinstance(node.targets[0], ast.Name):
             return None
         
         field_name = node.targets[0].id
         
-        if field_name.startswith('__'):
-            return None
-        
         field_info = {
             "name": field_name,
             "type": "unknown"
         }
         
-        if node.value and isinstance(node.value, ast.Call):
-            field_type = self._get_column_type(node.value)
-            if field_type:
-                field_info["type"] = field_type
+        if node.value:
+            field_attrs = self._analyze_field_value(node.value)
+            if field_attrs:
+                field_info["field_attrs"] = field_attrs
         
         return field_info
-      
-    def _get_column_type(self, call: ast.Call) -> str:
-        if isinstance(call.func, ast.Name) and call.func.id == "Column":
-            if call.args and len(call.args) > 0:
-                return self._get_type_name(call.args[0])
-        
-        return "unknown"
-    
-    def _get_type_name(self, node: ast.AST) -> str:
-        if isinstance(node, ast.Name):
-            return node.id
-        elif isinstance(node, ast.Attribute):
-            return self._get_attribute_chain(node)
-        elif isinstance(node, ast.Call):
-            return self._get_type_name(node.func)
-        return "unknown"
-    
-    def _get_constant_value(self, node: ast.AST) -> Any:
-        if isinstance(node, ast.Constant):
-            return node.value
-        elif isinstance(node, ast.NameConstant):
-            return node.value
-        elif isinstance(node, ast.Name):
-            return node.id
-        return None
-    
-    def _get_attribute_chain(self, node: ast.Attribute) -> str:
-        parts = []
-        current = node
-        while isinstance(current, ast.Attribute):
-            parts.append(current.attr)
-            current = current.value
-        if isinstance(current, ast.Name):
-            parts.append(current.id)
-        return ".".join(reversed(parts))
 
+    def _analyze_field_value(self, value: ast.AST) -> Dict[str, Any]:
+        if not isinstance(value, ast.Call):
+            return {}
+        
+        if isinstance(value.func, ast.Name) and value.func.id == "Field":
+            field_attrs = {}
+            
+            for arg in value.args:
+                if isinstance(arg, ast.Constant):
+                    field_attrs["default"] = arg.value
+            
+            for keyword in value.keywords:
+                if keyword.arg:
+                    field_attrs[keyword.arg] = self._get_constant_value(keyword.value)
+            
+            return field_attrs
+        
+        return {}
+      
     def _get_type_annotation(self, annotation: ast.AST) -> str:
         # get str annotation
         if isinstance(annotation, ast.Name):
@@ -639,73 +767,56 @@ class DeclarationCollector(ast.NodeVisitor):
         else:
             slice_type = self._get_type_annotation(node.slice)
             return f"{base}[{slice_type}]"
-  
-    def visit_FunctionDef(self, node: ast.FunctionDef):
-        function_type = "function"
-        http_method = None
-        path = None
-        
-        for decorator in node.decorator_list:
-            method, decorator_path = self._parse_router_decorator(decorator)
-            if method:
-                function_type = "handler"
-                http_method = method
-                path = decorator_path or "/"
-                break
-        
-        self.declarations[node.name] = {
-            'type': function_type,
-            'lineno': node.lineno,
-            'async': False,
-            'http_method': http_method,
-            'path': path
-        }
-        self.generic_visit(node)
+    
+    def _get_constant_value(self, node: ast.AST) -> Any:
+        # get constant value
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.NameConstant):
+            return node.value
+        elif isinstance(node, ast.Name):
+            return node.id
+        return None
+    
+    def _get_base_name(self, base: ast.AST) -> str:
+        if isinstance(base, ast.Name):
+            return base.id
+        elif isinstance(base, ast.Attribute):
+            return base.attr
+        return ""
+    
+    def _get_keyword_value(self, keyword: ast.keyword) -> Any:
+        if isinstance(keyword.value, ast.Constant):
+            return keyword.value.value
+        elif isinstance(keyword.value, ast.NameConstant):
+            return keyword.value.value
+        return None
+    
+    def _get_attribute_chain(self, node: ast.Attribute) -> str:
+        parts = []
+        current = node
+        while isinstance(current, ast.Attribute):
+            parts.append(current.attr)
+            current = current.value
+        if isinstance(current, ast.Name):
+            parts.append(current.id)
+        return ".".join(reversed(parts))
 
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-        function_type = "function"
-        http_method = None
-        path = None
-        
-        for decorator in node.decorator_list:
-            method, decorator_path = self._parse_router_decorator(decorator)
-            if method:
-                function_type = "handler"
-                http_method = method
-                path = decorator_path or "/"
-                break
-        
+    def visit_FunctionDef(self, node: ast.FunctionDef):
         self.declarations[node.name] = {
-            'type': function_type,
+            'type': 'function', 
             'lineno': node.lineno,
-            'async': True,
-            'http_method': http_method,
-            'path': path
+            'async': False
         }
         self.generic_visit(node)
-        
-    def _parse_router_decorator(self, decorator: ast.AST) -> tuple[str, str]:
-        method = None
-        path = None
-        
-        if isinstance(decorator, ast.Attribute):
-            if (isinstance(decorator.value, ast.Name) and 
-                decorator.value.id == "router"):
-                method = decorator.attr
-                path = "/"
-        
-        elif isinstance(decorator, ast.Call):
-            if isinstance(decorator.func, ast.Attribute):
-                if (isinstance(decorator.func.value, ast.Name) and 
-                    decorator.func.value.id == "router"):
-                    method = decorator.func.attr
-                    
-                    if decorator.args and len(decorator.args) > 0:
-                        path = self._get_string_value(decorator.args[0])
-                    else:
-                        path = "/"
-        
-        return method, path
+    
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+        self.declarations[node.name] = {
+            'type': 'function',
+            'lineno': node.lineno, 
+            'async': True
+        }
+        self.generic_visit(node)
     
     def visit_Import(self, node: ast.Import):
         for alias in node.names:
@@ -821,11 +932,8 @@ class CallAnalyzer(ast.NodeVisitor):
             "calls": []
         })
         
-        if class_info.get('type') == 'sql_class':
-            if 'table_name' in class_info:
-                class_node["table_name"] = class_info['table_name']
-            if 'model_fields' in class_info:
-                class_node["model_fields"] = class_info['model_fields']
+        if class_info.get('type') == 'sql_class' and 'model_fields' in class_info:
+            class_node["model_fields"] = class_info['model_fields']
         
         if node.decorator_list:
             class_node["decorators"] = [self._get_decorator_name(decorator) for decorator in node.decorator_list]
@@ -835,29 +943,22 @@ class CallAnalyzer(ast.NodeVisitor):
         self._current_path.pop()
     
     def visit_FunctionDef(self, node: ast.FunctionDef):
-        func_info = self.module_data['declarations'].get(node.name, {})
-        
-        function_node = {
+        function_node = self._add_child({
             "name": node.name,
-            "type": func_info.get('type', 'function'),
+            "type": "function",
             "lineno": node.lineno,
             "children": [],
             "args": self._parse_arguments(node.args),
             "calls": []
-        }
-        
-        if func_info.get('type') == 'handler':
-            function_node["http_method"] = func_info.get('http_method')
-            function_node["path"] = func_info.get('path')
+        })
         
         if node.decorator_list:
             function_node["decorators"] = [self._get_decorator_name(decorator) for decorator in node.decorator_list]
         
-        self._add_child(function_node)
         self._current_path.append(function_node)
         self.generic_visit(node)
         self._current_path.pop()
-
+    
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
         func_info = self.module_data['declarations'].get(node.name, {})
         
@@ -871,19 +972,13 @@ class CallAnalyzer(ast.NodeVisitor):
             "calls": []
         }
         
-        # Добавляем информацию о handler'е если это handler
-        if func_info.get('type') == 'handler':
-            function_node["http_method"] = func_info.get('http_method')
-            function_node["path"] = func_info.get('path')
-        
         if node.decorator_list:
             function_node["decorators"] = [self._get_decorator_name(decorator) for decorator in node.decorator_list]
         
-        self._add_child(function_node)
         self._current_path.append(function_node)
         self.generic_visit(node)
         self._current_path.pop()
-
+    
     def visit_Call(self, node: ast.Call):
         call_info = self._analyze_call(node)
         if call_info:
@@ -977,26 +1072,20 @@ class CallAnalyzer(ast.NodeVisitor):
         return self.tree
 
 
+# Обновленный usage
 if __name__ == "__main__":
     input_data = {
         "modules": [
-        {
-            "module": "backend/app/test/routing.py",
-            "imports": []
-        },
-        {
-            "module": "backend/app/test/file_example.py", 
-            "imports": []
-        },
-        {
-            "module": "backend/app/test/file_example_imported.py",
-            "imports": []
-        },
-        {
-            "module": "backend/app/models.py",
-            "imports": []
-        }
-      ]
+            {
+                "module": "backend.app.test.file_example",
+            },
+            {
+                "module": "backend.app.test.file_example_imported",
+            },
+            {
+                "module": "backend.app.test.models",
+            }
+        ]
     }
     
     analyzer = ProjectAnalyzer(input_data)
