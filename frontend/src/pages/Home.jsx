@@ -17,6 +17,7 @@ const Home = () => {
             })
     }, [])
     return <div>
+        <h1>Testing request to backend</h1>
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
     </div>
