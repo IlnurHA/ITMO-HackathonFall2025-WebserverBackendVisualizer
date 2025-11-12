@@ -1,5 +1,6 @@
 import ast  # noqa: D100
 import json
+import cfg_visitor
 from typing import Any, Literal
 
 # TODO: process import using *
@@ -76,18 +77,14 @@ class ProjectAnalyzer:
     def analyze_and_get_dict(self) -> dict:  # noqa: D102
         self._first_pass()  # declarations
         self._second_pass()  # calls
-
         output = {"modules": []}
-
         for module_info in self.input_data["modules"]:
             file_path = module_info["module"]
             module_name = self.project_root_dir + "/" + file_path
             module_data = self.modules_data.get(module_name, {})
-
             output_module = dict(module_info)
             output_module.update({"tree": module_data.get("tree", {"children": []})})
             output["modules"].append(output_module)
-
         return output
 
     def _update_project_index(
@@ -132,11 +129,9 @@ class ProjectAnalyzer:
             file_path = module_info["module"]
             module_name = self.project_root_dir + "/" + file_path
             module_data = self.modules_data.get(module_name, {})
-
             output_module = dict(module_info)
             output_module.update({"tree": module_data.get("tree", {"children": []})})
             output["modules"].append(output_module)
-
         return json.dumps(output, indent=2, ensure_ascii=False)
 
 
@@ -522,6 +517,11 @@ class CallAnalyzer(ast.NodeVisitor):
             "calls": [],
         }
 
+        file_path = self.module_data.get("filename")
+        cfg_json = cfg_visitor.generate_cfg_from_file(file_path, node.name)
+        function_node["cfg"] = json.loads(cfg_json)
+
+
         if func_info.get("type") == "handler":
             function_node["http_method"] = func_info.get("http_method")
             function_node["path"] = func_info.get("path")
@@ -548,6 +548,10 @@ class CallAnalyzer(ast.NodeVisitor):
             "args": self._parse_arguments(node.args),
             "calls": [],
         }
+
+        file_path = self.module_data.get("filename")
+        cfg_json = cfg_visitor.generate_cfg_from_file(file_path, node.name)
+        function_node["cfg"] = json.loads(cfg_json)
 
         # Добавляем информацию о handler'е если это handler  # noqa: RUF003
         if func_info.get("type") == "handler":
