@@ -6,6 +6,7 @@ const Header = () => {
             <Link to="/">Home</Link>
             <Link to="/random-circles">Random Circles</Link>
             <Link to="/animated-circles">Animated Circles</Link>
+            <Link to="/tree">Tree</Link>
         </nav>
     </header>
 }
