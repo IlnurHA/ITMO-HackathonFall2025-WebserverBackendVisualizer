@@ -9,7 +9,7 @@ import TreePage from './pages/TreePage'
 function App() {
   return (
     <Router>
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
         <Header />
         <Routes>
           <Route path="/" Component={Home} />
