@@ -1,149 +1,29 @@
 import { useState } from "react";
 import Tree from "react-d3-tree"
+import { useCenteredTree } from "./helpers";
+import tmpData from "./sample.json"
 
-const tmpData = {
-    "modules": [
-        {
-            "module": "app/utils.py",
-            "tree": {
-                "children": [
-                    {
-                        "name": "EmailData",
-                        "type": "class",
-                        "lineno": 20,
-                        "children": [],
-                        "calls": [],
-                        "decorators": [
-                            "dataclass"
-                        ]
-                    },
-                    {
-                        "name": "render_email_template",
-                        "type": "function",
-                        "lineno": 25,
-                        "children": [],
-                        "args": [],
-                        "calls": []
-                    },
-                    {
-                        "name": "send_email",
-                        "type": "function",
-                        "lineno": 33,
-                        "children": [],
-                        "args": [],
-                        "calls": []
-                    },
-                    {
-                        "name": "generate_test_email",
-                        "type": "function",
-                        "lineno": 58,
-                        "children": [],
-                        "args": [
-                            "email_to"
-                        ],
-                        "calls": [
-                            {
-                                "function": "render_email_template",
-                                "module": null,
-                                "lineno": 61,
-                                "type": "local"
-                            },
-                            {
-                                "function": "EmailData",
-                                "module": null,
-                                "lineno": 65,
-                                "type": "local"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "generate_reset_password_email",
-                        "type": "function",
-                        "lineno": 68,
-                        "children": [],
-                        "args": [
-                            "email_to",
-                            "email",
-                            "token"
-                        ],
-                        "calls": [
-                            {
-                                "function": "render_email_template",
-                                "module": null,
-                                "lineno": 72,
-                                "type": "local"
-                            },
-                            {
-                                "function": "EmailData",
-                                "module": null,
-                                "lineno": 82,
-                                "type": "local"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "generate_new_account_email",
-                        "type": "function",
-                        "lineno": 85,
-                        "children": [],
-                        "args": [
-                            "email_to",
-                            "username",
-                            "password"
-                        ],
-                        "calls": [
-                            {
-                                "function": "render_email_template",
-                                "module": null,
-                                "lineno": 90,
-                                "type": "local"
-                            },
-                            {
-                                "function": "EmailData",
-                                "module": null,
-                                "lineno": 100,
-                                "type": "local"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "generate_password_reset_token",
-                        "type": "function",
-                        "lineno": 103,
-                        "children": [],
-                        "args": [
-                            "email"
-                        ],
-                        "calls": []
-                    },
-                    {
-                        "name": "verify_password_reset_token",
-                        "type": "function",
-                        "lineno": 116,
-                        "children": [],
-                        "args": [
-                            "token"
-                        ],
-                        "calls": []
-                    }
-                ]
-            }
-        }
-    ]
-}
 
 function transoformData(json) {
     const transformedData = json.modules.map(it => {
         return {
-            name: it.module, children: it.tree.children.map((module) => {
+            name: it.module,
+            attributes: { ...it, type: "module" },
+            children: it.tree.children.map((module) => {
                 if (module.type == "function") {
                     return {
-                        ...module, children: module.calls.map((func) => {
+                        name: module.name,
+                        attributes: module,
+                        children: module.calls.map((func) => {
                             return { name: func.function }
                         })
                     }
                 }
-                return module
+                return {
+                    name: module.name,
+                    attributes: module,
+                    children: module.children
+                }
             }
             )
         }
@@ -153,6 +33,31 @@ function transoformData(json) {
         children: transformedData
     }
 }
+
+const rendeNode = (
+    {
+        nodeDatum,
+        toggleNode,
+        foreignObjectProps
+    }
+) => (
+    <foreignObject {...foreignObjectProps} onClick={() => {
+        // TODO change to expanding and replace toggle with button?
+        toggleNode()
+    }
+    } style={{
+        background: nodeDatum.children && nodeDatum.children?.length != 0 ? "#ffffff" : "#a0a0a0",
+        border: "2px solid #2F80ED",
+        textAlign: "center",
+        boxShadow: "0px 10px 10px rgba(0, 0, 0, 0.1)",
+        padding: "5px 0",
+        borderRadius: "5px",
+    }}>
+        <h3>{nodeDatum.name}</h3>
+        {nodeDatum.attributes?.type}
+    </foreignObject>
+)
+
 
 const TreePage = () => {
     const [dataset, setDataset] = useState(transoformData(tmpData))
@@ -176,21 +81,35 @@ const TreePage = () => {
         }
     };
 
+    const [dimensions, translate, containerRef] = useCenteredTree();
 
-    return <div>
+
+
+    const foreignObjectProps = { width: 400, height: 100, x: -200, y: -50 };
+    const nodeSize = { x: foreignObjectProps.width + 40, y: foreignObjectProps.height + 40 };
+
+    return <div style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column" }}>
         <h1>Сюда файл можно</h1>
         <input type="file" accept=".json" onChange={handleFileChange} />
         <h1>Деревяха</h1>
-        <div id="treeWrapper" style={{ height: 1000 }}>
+        <div style={{ height: "100%", width: "100%" }} ref={containerRef} >
             {dataset &&
                 <Tree
                     data={dataset}
+                    pathFunc={"step"}
+
+                    dimensions={dimensions}
+                    translate={translate}
+                    nodeSize={nodeSize}
+
+                    renderCustomNodeElement={(rd3tProps) => rendeNode({ ...rd3tProps, foreignObjectProps })}
+
                     initialDepth={1}
-                    translate={{ x: 100, y: 100 }}
+                // orientation="vertical"
                 />
             }
         </div>
-    </div>
+    </div >
 }
 
 export default TreePage
