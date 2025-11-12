@@ -28,7 +28,6 @@ def scan(req: ScanRequest) -> ScanRequest:  # noqa: D103
         dependencies = analyze_project(
             project_path=req.repo_root,
             include_external=not req.include_tests,
-            excluded_dirs=[],
             root_module=req.root_module,
             max_depth=req.max_depth,
         )
