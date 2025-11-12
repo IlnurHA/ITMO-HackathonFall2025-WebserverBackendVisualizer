@@ -19,6 +19,8 @@ import re
 from pathlib import Path
 from collections import defaultdict
 
+from file_processor import ProjectAnalyzer
+
 def parse_arguments():
     """Парсит аргументы командной строки"""
     parser = argparse.ArgumentParser(description='Универсальный анализатор зависимостей Python проектов')
@@ -221,8 +223,8 @@ def analyze_project(project_path, include_external=False, excluded_dirs=None, ro
     
     print(f"📦 Найдено {len(module_to_file)} модулей")
     
-    # Анализируем зависимости
-    dependencies = defaultdict(list)
+    # Собираем все модули проекта
+    modules_list = []
     processed_files = 0
     
     for py_file in project_root.rglob('*.py'):
@@ -231,16 +233,29 @@ def analyze_project(project_path, include_external=False, excluded_dirs=None, ro
         if any(excl in rel_path.split('/') for excl in excluded_dirs):
             continue
         
+        # Получаем зависимости для этого файла
         deps = analyze_file_dependencies(py_file, module_to_file, file_to_module, include_external, max_depth)
         processed_files += 1
         
+        # Преобразуем зависимости в нужный формат
+        imports_list = []
         if deps:
-            dependencies[rel_path] = list(deps)
+            imports_list = list(deps)
+        
+        # Добавляем модуль в список
+        module_info = {
+            "module": rel_path,  # относительный путь к файлу
+            "imports": imports_list  # список импортов (относительных путей)
+        }
+        modules_list.append(module_info)
     
     print(f"✅ Обработано {processed_files} файлов")
-    print(f"🔗 Найдено {len(dependencies)} файлов с зависимостями")
+    print(f"🔗 Найдено {len(modules_list)} модулей с зависимостями")
     
-    return dict(dependencies)
+    # Возвращаем в формате для AST анализатора
+    return {
+        "modules": modules_list
+    }
 
 def generate_dot_file(dependencies, output_file):
     """
@@ -331,6 +346,15 @@ def generate_json_file(dependencies, output_file):
     print(f"✅ JSON файл сохранен в {output_file}")
     return output_file
 
+def generate_json(dependencies):
+    return json.dumps(dependencies)
+
+def generate_json_file_with_func_tree(dependencies, output_file):
+    result = ProjectAnalyzer(dependencies).analyze_and_get_dict()
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+    
 def generate_svg_from_dot(dot_file, svg_file):
     """
     Генерирует SVG файл из DOT файла с помощью Graphviz
@@ -357,7 +381,7 @@ def main():
     excluded_dirs = [d.strip() for d in args.exclude.split(',') if d.strip()]
     
     try:
-        # Анализ зависимостей
+    # Анализ зависимостей
         dependencies = analyze_project(
             project_path=args.project_path,
             include_external=args.include_external,
@@ -365,6 +389,8 @@ def main():
             root_module=args.root_module,
             max_depth=args.max_depth
         )
+
+        generate_json_file_with_func_tree(dependencies, "test.json")
         
         # Генерация выходных файлов
         output_formats = [fmt.strip() for fmt in args.output_format.split(',') if fmt.strip()]

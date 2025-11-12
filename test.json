@@ -1,0 +1,1159 @@
+{
+  "modules": [
+    {
+      "module": "fastapi_app.py",
+      "tree": {
+        "children": [
+          {
+            "name": "fast_api_lifespan",
+            "type": "function",
+            "lineno": 13,
+            "async": true,
+            "children": [],
+            "args": [
+              "_"
+            ],
+            "calls": [],
+            "decorators": [
+              "asynccontextmanager"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "module": "config.py",
+      "tree": {
+        "children": [
+          {
+            "name": "Settings",
+            "type": "class",
+            "lineno": 7,
+            "children": [],
+            "calls": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "main.py",
+      "tree": {
+        "children": []
+      }
+    },
+    {
+      "module": "adapters/repository.py",
+      "tree": {
+        "children": [
+          {
+            "name": "Repository",
+            "type": "class",
+            "lineno": 6,
+            "children": [
+              {
+                "name": "__init__",
+                "type": "function",
+                "lineno": 7,
+                "children": [],
+                "args": [
+                  "self",
+                  "db_url",
+                  "db_echo"
+                ],
+                "calls": []
+              },
+              {
+                "name": "get_scoped_session",
+                "type": "function",
+                "lineno": 19,
+                "children": [],
+                "args": [
+                  "self"
+                ],
+                "calls": []
+              },
+              {
+                "name": "session_dependency",
+                "type": "function",
+                "lineno": 24,
+                "async": true,
+                "children": [],
+                "args": [
+                  "self"
+                ],
+                "calls": []
+              }
+            ],
+            "calls": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "adapters/__init__.py",
+      "tree": {
+        "children": []
+      }
+    },
+    {
+      "module": "service/tools.py",
+      "tree": {
+        "children": [
+          {
+            "name": "update_url",
+            "type": "function",
+            "lineno": 1,
+            "children": [],
+            "args": [
+              "dictionary"
+            ],
+            "calls": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "service/__init__.py",
+      "tree": {
+        "children": []
+      }
+    },
+    {
+      "module": "domain/models_sqlalchemy.py",
+      "tree": {
+        "children": [
+          {
+            "name": "BaseModel",
+            "type": "class",
+            "lineno": 12,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "FoodAdditive",
+            "type": "sql_class",
+            "lineno": 18,
+            "children": [],
+            "calls": [],
+            "table_name": "foodAdditives",
+            "model_fields": []
+          },
+          {
+            "name": "IngredientsInfo",
+            "type": "sql_class",
+            "lineno": 29,
+            "children": [],
+            "calls": [],
+            "table_name": "ingredientsInfo",
+            "model_fields": [
+              {
+                "name": "permissiveness",
+                "type": "unknown"
+              }
+            ]
+          },
+          {
+            "name": "FederationEntity",
+            "type": "sql_class",
+            "lineno": 38,
+            "children": [],
+            "calls": [],
+            "table_name": "federationEntities",
+            "model_fields": []
+          },
+          {
+            "name": "DistrictEntity",
+            "type": "sql_class",
+            "lineno": 44,
+            "children": [],
+            "calls": [],
+            "table_name": "districtEntities",
+            "model_fields": []
+          },
+          {
+            "name": "DistrictSettlementEntity",
+            "type": "sql_class",
+            "lineno": 53,
+            "children": [],
+            "calls": [],
+            "table_name": "districtSettlementEntities",
+            "model_fields": []
+          },
+          {
+            "name": "FoodPoint",
+            "type": "sql_class",
+            "lineno": 62,
+            "children": [],
+            "calls": [],
+            "table_name": "foodPoints",
+            "model_fields": [
+              {
+                "name": "food_point_type",
+                "type": "unknown"
+              },
+              {
+                "name": "cuisine_type",
+                "type": "unknown"
+              },
+              {
+                "name": "halal_certificate_expiration_date",
+                "type": "unknown"
+              }
+            ]
+          },
+          {
+            "name": "User",
+            "type": "sql_class",
+            "lineno": 80,
+            "children": [],
+            "calls": [],
+            "table_name": "users",
+            "model_fields": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "domain/__init__.py",
+      "tree": {
+        "children": []
+      }
+    },
+    {
+      "module": "domain/enums.py",
+      "tree": {
+        "children": [
+          {
+            "name": "LegalType",
+            "type": "class",
+            "lineno": 4,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "ContactTypes",
+            "type": "class",
+            "lineno": 13,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "FoodPointTypes",
+            "type": "class",
+            "lineno": 23,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "CuisineTypes",
+            "type": "class",
+            "lineno": 36,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "DaysOfWeek",
+            "type": "class",
+            "lineno": 48,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "ExceptionalDayReason",
+            "type": "class",
+            "lineno": 58,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "Permissiveness",
+            "type": "class",
+            "lineno": 63,
+            "children": [],
+            "calls": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/auth.py",
+      "tree": {
+        "children": [
+          {
+            "name": "AccessToken",
+            "type": "class",
+            "lineno": 26,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "UserLogin",
+            "type": "class",
+            "lineno": 31,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "User",
+            "type": "class",
+            "lineno": 36,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "Token",
+            "type": "class",
+            "lineno": 41,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "TokenData",
+            "type": "class",
+            "lineno": 46,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "get_password_hash",
+            "type": "function",
+            "lineno": 50,
+            "children": [],
+            "args": [
+              "password"
+            ],
+            "calls": []
+          },
+          {
+            "name": "verify_password",
+            "type": "function",
+            "lineno": 54,
+            "children": [],
+            "args": [
+              "plain_password",
+              "hashed_password"
+            ],
+            "calls": []
+          },
+          {
+            "name": "authenticate_user",
+            "type": "function",
+            "lineno": 58,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "username",
+              "password"
+            ],
+            "calls": [
+              {
+                "function": "verify_password",
+                "module": null,
+                "lineno": 61,
+                "type": "local"
+              }
+            ]
+          },
+          {
+            "name": "create_access_token",
+            "type": "function",
+            "lineno": 66,
+            "children": [],
+            "args": [
+              "data",
+              "expires_delta"
+            ],
+            "calls": []
+          },
+          {
+            "name": "get_user",
+            "type": "function",
+            "lineno": 77,
+            "async": true,
+            "children": [],
+            "args": [
+              "username",
+              "session"
+            ],
+            "calls": []
+          },
+          {
+            "name": "get_current_user",
+            "type": "function",
+            "lineno": 84,
+            "async": true,
+            "children": [],
+            "args": [
+              "token",
+              "session"
+            ],
+            "calls": [
+              {
+                "function": "TokenData",
+                "module": null,
+                "lineno": 97,
+                "type": "local"
+              },
+              {
+                "function": "get_user",
+                "module": null,
+                "lineno": 100,
+                "type": "local"
+              }
+            ]
+          },
+          {
+            "name": "get_current_active_user",
+            "type": "function",
+            "lineno": 107,
+            "async": true,
+            "children": [],
+            "args": [
+              "current_user"
+            ],
+            "calls": []
+          },
+          {
+            "name": "login",
+            "type": "handler",
+            "lineno": 116,
+            "async": true,
+            "children": [],
+            "args": [
+              "form_data",
+              "session"
+            ],
+            "calls": [
+              {
+                "function": "authenticate_user",
+                "module": null,
+                "lineno": 118,
+                "type": "local"
+              },
+              {
+                "function": "create_access_token",
+                "module": null,
+                "lineno": 126,
+                "type": "local"
+              },
+              {
+                "function": "AccessToken",
+                "module": null,
+                "lineno": 130,
+                "type": "local"
+              }
+            ],
+            "http_method": "post",
+            "path": "/",
+            "decorators": [
+              "router.post"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/__init__.py",
+      "tree": {
+        "children": []
+      }
+    },
+    {
+      "module": "api_v1/food_points/views.py",
+      "tree": {
+        "children": [
+          {
+            "name": "get_food_points",
+            "type": "handler",
+            "lineno": 17,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "limit",
+              "offset"
+            ],
+            "calls": [],
+            "http_method": "get",
+            "path": "/",
+            "decorators": [
+              "router.get"
+            ]
+          },
+          {
+            "name": "get_food_point",
+            "type": "handler",
+            "lineno": 23,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_point_id"
+            ],
+            "calls": [],
+            "http_method": "get",
+            "path": "/{food_point_id}",
+            "decorators": [
+              "router.get"
+            ]
+          },
+          {
+            "name": "create_food_point",
+            "type": "handler",
+            "lineno": 34,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_point_create",
+              "_"
+            ],
+            "calls": [],
+            "http_method": "post",
+            "path": "/",
+            "decorators": [
+              "router.post"
+            ]
+          },
+          {
+            "name": "delete_food_point",
+            "type": "handler",
+            "lineno": 41,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_point_id",
+              "_"
+            ],
+            "calls": [],
+            "http_method": "delete",
+            "path": "/{food_point_id}",
+            "decorators": [
+              "router.delete"
+            ]
+          },
+          {
+            "name": "patch_food_point",
+            "type": "handler",
+            "lineno": 53,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_point_id",
+              "food_point_patch",
+              "_"
+            ],
+            "calls": [],
+            "http_method": "patch",
+            "path": "/{food_point_id}",
+            "decorators": [
+              "router.patch"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/food_points/crud.py",
+      "tree": {
+        "children": [
+          {
+            "name": "function_get_necessary_attributes",
+            "type": "function",
+            "lineno": 14,
+            "children": [],
+            "args": [
+              "food_point"
+            ],
+            "calls": []
+          },
+          {
+            "name": "create_food_point_helper",
+            "type": "function",
+            "lineno": 29,
+            "async": true,
+            "children": [],
+            "args": [
+              "food_point",
+              "session"
+            ],
+            "calls": []
+          },
+          {
+            "name": "patch_food_point_helper",
+            "type": "function",
+            "lineno": 79,
+            "async": true,
+            "children": [],
+            "args": [
+              "food_point_to_patch",
+              "food_point",
+              "session"
+            ],
+            "calls": []
+          },
+          {
+            "name": "get_food_points",
+            "type": "function",
+            "lineno": 171,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "limit",
+              "offset"
+            ],
+            "calls": []
+          },
+          {
+            "name": "get_food_points_by_id",
+            "type": "function",
+            "lineno": 182,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_point_id"
+            ],
+            "calls": [
+              {
+                "function": "function_get_necessary_attributes",
+                "module": null,
+                "lineno": 189,
+                "type": "local"
+              }
+            ]
+          },
+          {
+            "name": "create_food_point",
+            "type": "function",
+            "lineno": 192,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_point"
+            ],
+            "calls": [
+              {
+                "function": "create_food_point_helper",
+                "module": null,
+                "lineno": 193,
+                "type": "local"
+              },
+              {
+                "function": "function_get_necessary_attributes",
+                "module": null,
+                "lineno": 195,
+                "type": "local"
+              }
+            ]
+          },
+          {
+            "name": "delete_food_point",
+            "type": "function",
+            "lineno": 198,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_point_id"
+            ],
+            "calls": []
+          },
+          {
+            "name": "patch_food_point",
+            "type": "function",
+            "lineno": 209,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_point_id",
+              "food_point_patch"
+            ],
+            "calls": [
+              {
+                "function": "patch_food_point_helper",
+                "module": null,
+                "lineno": 212,
+                "type": "local"
+              },
+              {
+                "function": "function_get_necessary_attributes",
+                "module": null,
+                "lineno": 215,
+                "type": "local"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/food_points/schemas.py",
+      "tree": {
+        "children": [
+          {
+            "name": "FoodPointBase",
+            "type": "class",
+            "lineno": 7,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "FoodPointCreate",
+            "type": "class",
+            "lineno": 25,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "FoodPoint",
+            "type": "class",
+            "lineno": 29,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "FoodPointPatch",
+            "type": "class",
+            "lineno": 33,
+            "children": [],
+            "calls": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/food_points/__init__.py",
+      "tree": {
+        "children": []
+      }
+    },
+    {
+      "module": "api_v1/food_additives/views.py",
+      "tree": {
+        "children": [
+          {
+            "name": "get_food_additives",
+            "type": "handler",
+            "lineno": 18,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "limit",
+              "offset"
+            ],
+            "calls": [],
+            "http_method": "get",
+            "path": "/",
+            "decorators": [
+              "router.get"
+            ]
+          },
+          {
+            "name": "create_food_additive",
+            "type": "handler",
+            "lineno": 24,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_additive",
+              "_"
+            ],
+            "calls": [],
+            "http_method": "post",
+            "path": "/",
+            "decorators": [
+              "router.post"
+            ]
+          },
+          {
+            "name": "get_food_additive",
+            "type": "handler",
+            "lineno": 31,
+            "async": true,
+            "children": [],
+            "args": [
+              "food_additive_id",
+              "session"
+            ],
+            "calls": [],
+            "http_method": "get",
+            "path": "/{food_additive_id}",
+            "decorators": [
+              "router.get"
+            ]
+          },
+          {
+            "name": "delete_food_additive",
+            "type": "handler",
+            "lineno": 43,
+            "async": true,
+            "children": [],
+            "args": [
+              "food_additive_id",
+              "session",
+              "_"
+            ],
+            "calls": [],
+            "http_method": "delete",
+            "path": "/{food_additive_id}",
+            "decorators": [
+              "router.delete"
+            ]
+          },
+          {
+            "name": "patch_food_additive",
+            "type": "handler",
+            "lineno": 56,
+            "async": true,
+            "children": [],
+            "args": [
+              "food_additive_id",
+              "food_additive_patch",
+              "session",
+              "_"
+            ],
+            "calls": [],
+            "http_method": "patch",
+            "path": "/{food_additive_id}",
+            "decorators": [
+              "router.patch"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/food_additives/crud.py",
+      "tree": {
+        "children": [
+          {
+            "name": "get_food_additives",
+            "type": "function",
+            "lineno": 12,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "limit",
+              "offset"
+            ],
+            "calls": []
+          },
+          {
+            "name": "get_food_additive_by_id",
+            "type": "function",
+            "lineno": 19,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_additive_id"
+            ],
+            "calls": []
+          },
+          {
+            "name": "create_food_additive",
+            "type": "function",
+            "lineno": 26,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_additive_create"
+            ],
+            "calls": []
+          },
+          {
+            "name": "delete_food_additive",
+            "type": "function",
+            "lineno": 35,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_additive_id"
+            ],
+            "calls": []
+          },
+          {
+            "name": "patch_food_additive",
+            "type": "function",
+            "lineno": 46,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "food_additive_id",
+              "food_additive_patch"
+            ],
+            "calls": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/food_additives/schemas.py",
+      "tree": {
+        "children": [
+          {
+            "name": "FoodAdditiveBase",
+            "type": "class",
+            "lineno": 6,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "FoodAdditiveCreate",
+            "type": "class",
+            "lineno": 17,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "FoodAdditive",
+            "type": "class",
+            "lineno": 21,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "FoodAdditivesPatch",
+            "type": "class",
+            "lineno": 25,
+            "children": [],
+            "calls": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/food_additives/__init__.py",
+      "tree": {
+        "children": []
+      }
+    },
+    {
+      "module": "api_v1/ingredients_info/views.py",
+      "tree": {
+        "children": [
+          {
+            "name": "get_ingredients_info",
+            "type": "handler",
+            "lineno": 15,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "limit",
+              "offset"
+            ],
+            "calls": [],
+            "http_method": "get",
+            "path": "/",
+            "decorators": [
+              "router.get"
+            ]
+          },
+          {
+            "name": "get_ingredients_info_by_id",
+            "type": "handler",
+            "lineno": 21,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "ingredient_id"
+            ],
+            "calls": [],
+            "http_method": "get",
+            "path": "/{ingredient_id}",
+            "decorators": [
+              "router.get"
+            ]
+          },
+          {
+            "name": "create_ingredient",
+            "type": "handler",
+            "lineno": 27,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "ingredient_create",
+              "_"
+            ],
+            "calls": [],
+            "http_method": "post",
+            "path": "/",
+            "decorators": [
+              "router.post"
+            ]
+          },
+          {
+            "name": "delete_ingredient",
+            "type": "handler",
+            "lineno": 34,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "ingredient_id",
+              "_"
+            ],
+            "calls": [],
+            "http_method": "delete",
+            "path": "/{ingredient_id}",
+            "decorators": [
+              "router.delete"
+            ]
+          },
+          {
+            "name": "patch_ingredient",
+            "type": "handler",
+            "lineno": 45,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "ingredient_id",
+              "ingredient_info_patch",
+              "_"
+            ],
+            "calls": [],
+            "http_method": "patch",
+            "path": "/{ingredient_id}",
+            "decorators": [
+              "router.patch"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/ingredients_info/crud.py",
+      "tree": {
+        "children": [
+          {
+            "name": "get_ingredients_info",
+            "type": "function",
+            "lineno": 13,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "limit",
+              "offset"
+            ],
+            "calls": []
+          },
+          {
+            "name": "get_ingredients_info_by_id",
+            "type": "function",
+            "lineno": 30,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "ingredient_id"
+            ],
+            "calls": []
+          },
+          {
+            "name": "create_ingredient",
+            "type": "function",
+            "lineno": 45,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "ingredients_info_create"
+            ],
+            "calls": []
+          },
+          {
+            "name": "delete_ingredient",
+            "type": "function",
+            "lineno": 54,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "ingredient_id"
+            ],
+            "calls": []
+          },
+          {
+            "name": "patch_ingredient",
+            "type": "function",
+            "lineno": 67,
+            "async": true,
+            "children": [],
+            "args": [
+              "session",
+              "ingredient_id",
+              "ingredient_patch"
+            ],
+            "calls": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/ingredients_info/schemas.py",
+      "tree": {
+        "children": [
+          {
+            "name": "IngredientsInfoBase",
+            "type": "class",
+            "lineno": 6,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "IngredientsInfoCreate",
+            "type": "class",
+            "lineno": 13,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "IngredientsInfo",
+            "type": "class",
+            "lineno": 17,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "IngredientsInfoPut",
+            "type": "class",
+            "lineno": 21,
+            "children": [],
+            "calls": []
+          },
+          {
+            "name": "IngredientsInfoPatch",
+            "type": "class",
+            "lineno": 25,
+            "children": [],
+            "calls": []
+          }
+        ]
+      }
+    },
+    {
+      "module": "api_v1/ingredients_info/__init__.py",
+      "tree": {
+        "children": []
+      }
+    }
+  ]
+}

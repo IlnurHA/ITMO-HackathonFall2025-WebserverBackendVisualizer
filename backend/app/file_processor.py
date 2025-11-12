@@ -1,408 +1,9 @@
 import ast
+import os
 import json
 from typing import Dict, Any, Set, List
 
 # TODO: process import using *
-
-"""
-{
-  "modules": [
-    {
-      "module": "backend/app/test/routing.py",
-      "tree": {
-        "children": [
-          {
-            "name": "read_items",
-            "type": "handler",
-            "lineno": 14,
-            "children": [],
-            "args": [
-              "session",
-              "current_user",
-              "skip",
-              "limit"
-            ],
-            "calls": [
-              {
-                "function": "ItemsPublic",
-                "module": "backend.app.models",
-                "lineno": 41,
-                "type": "internal"
-              }
-            ],
-            "http_method": "get",
-            "path": "/",
-            "decorators": [
-              "router.get"
-            ]
-          },
-          {
-            "name": "read_item",
-            "type": "handler",
-            "lineno": 45,
-            "children": [],
-            "args": [
-              "session",
-              "current_user",
-              "id"
-            ],
-            "calls": [],
-            "http_method": "get",
-            "path": "/{id}",
-            "decorators": [
-              "router.get"
-            ]
-          },
-          {
-            "name": "create_item",
-            "type": "handler",
-            "lineno": 58,
-            "children": [],
-            "args": [],
-            "calls": [
-              {
-                "function": "model_validate",
-                "module": "backend.app.models",
-                "lineno": 64,
-                "type": "internal"
-              }
-            ],
-            "http_method": "post",
-            "path": "/",
-            "decorators": [
-              "router.post"
-            ]
-          },
-          {
-            "name": "update_item",
-            "type": "handler",
-            "lineno": 72,
-            "children": [],
-            "args": [],
-            "calls": [],
-            "http_method": "put",
-            "path": "/{id}",
-            "decorators": [
-              "router.put"
-            ]
-          },
-          {
-            "name": "delete_item",
-            "type": "handler",
-            "lineno": 96,
-            "children": [],
-            "args": [
-              "session",
-              "current_user",
-              "id"
-            ],
-            "calls": [
-              {
-                "function": "Message",
-                "module": "backend.app.models",
-                "lineno": 109,
-                "type": "internal"
-              }
-            ],
-            "http_method": "delete",
-            "path": "/{id}",
-            "decorators": [
-              "router.delete"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "module": "backend/app/test/file_example.py",
-      "tree": {
-        "children": [
-          {
-            "name": "local_function",
-            "type": "function",
-            "lineno": 3,
-            "children": [],
-            "args": [],
-            "calls": []
-          },
-          {
-            "name": "MyClass",
-            "type": "class",
-            "lineno": 6,
-            "children": [
-              {
-                "name": "__init__",
-                "type": "function",
-                "lineno": 7,
-                "children": [],
-                "args": [
-                  "self"
-                ],
-                "calls": [
-                  {
-                    "function": "create_class",
-                    "module": "backend.app.test.file_example_imported",
-                    "lineno": 8,
-                    "type": "internal"
-                  }
-                ]
-              },
-              {
-                "name": "outer_method",
-                "type": "function",
-                "lineno": 10,
-                "children": [
-                  {
-                    "name": "inner_function",
-                    "type": "function",
-                    "lineno": 11,
-                    "children": [],
-                    "args": [],
-                    "calls": [
-                      {
-                        "function": "local_function",
-                        "module": null,
-                        "lineno": 12,
-                        "type": "local"
-                      }
-                    ]
-                  }
-                ],
-                "args": [
-                  "self"
-                ],
-                "calls": []
-              }
-            ],
-            "calls": []
-          },
-          {
-            "name": "global_function",
-            "type": "function",
-            "lineno": 15,
-            "children": [
-              {
-                "name": "InnerClass",
-                "type": "class",
-                "lineno": 16,
-                "children": [
-                  {
-                    "name": "inner_method",
-                    "type": "function",
-                    "lineno": 17,
-                    "children": [],
-                    "args": [
-                      "self"
-                    ],
-                    "calls": []
-                  }
-                ],
-                "calls": []
-              }
-            ],
-            "args": [],
-            "calls": []
-          }
-        ]
-      }
-    },
-    {
-      "module": "backend/app/test/file_example_imported.py",
-      "tree": {
-        "children": [
-          {
-            "name": "create_class",
-            "type": "function",
-            "lineno": 1,
-            "children": [],
-            "args": [],
-            "calls": []
-          }
-        ]
-      }
-    },
-    {
-      "module": "backend/app/models.py",
-      "tree": {
-        "children": [
-          {
-            "name": "Service",
-            "type": "sql_class",
-            "lineno": 8,
-            "children": [],
-            "calls": [],
-            "table_name": "services",
-            "model_fields": [
-              {
-                "name": "id",
-                "type": "Integer"
-              },
-              {
-                "name": "name",
-                "type": "String"
-              },
-              {
-                "name": "type",
-                "type": "String"
-              },
-              {
-                "name": "meta",
-                "type": "JSON"
-              }
-            ]
-          },
-          {
-            "name": "File",
-            "type": "sql_class",
-            "lineno": 15,
-            "children": [],
-            "calls": [],
-            "table_name": "files",
-            "model_fields": [
-              {
-                "name": "id",
-                "type": "Integer"
-              },
-              {
-                "name": "path",
-                "type": "String"
-              }
-            ]
-          },
-          {
-            "name": "Handler",
-            "type": "sql_class",
-            "lineno": 20,
-            "children": [],
-            "calls": [],
-            "table_name": "handlers",
-            "model_fields": [
-              {
-                "name": "id",
-                "type": "Integer"
-              },
-              {
-                "name": "name",
-                "type": "String"
-              },
-              {
-                "name": "file_id",
-                "type": "Integer"
-              },
-              {
-                "name": "lineno",
-                "type": "Integer"
-              },
-              {
-                "name": "meta",
-                "type": "JSON"
-              },
-              {
-                "name": "file",
-                "type": "unknown"
-              }
-            ]
-          },
-          {
-            "name": "Endpoint",
-            "type": "sql_class",
-            "lineno": 29,
-            "children": [],
-            "calls": [],
-            "table_name": "endpoints",
-            "model_fields": [
-              {
-                "name": "id",
-                "type": "Integer"
-              },
-              {
-                "name": "path",
-                "type": "String"
-              },
-              {
-                "name": "method",
-                "type": "String"
-              },
-              {
-                "name": "handler_id",
-                "type": "Integer"
-              },
-              {
-                "name": "handler",
-                "type": "unknown"
-              }
-            ]
-          },
-          {
-            "name": "CFGNode",
-            "type": "sql_class",
-            "lineno": 37,
-            "children": [],
-            "calls": [],
-            "table_name": "cfg_nodes",
-            "model_fields": [
-              {
-                "name": "id",
-                "type": "Integer"
-              },
-              {
-                "name": "handler_id",
-                "type": "Integer"
-              },
-              {
-                "name": "label",
-                "type": "String"
-              },
-              {
-                "name": "lineno",
-                "type": "Integer"
-              },
-              {
-                "name": "meta",
-                "type": "JSON"
-              },
-              {
-                "name": "handler",
-                "type": "unknown"
-              }
-            ]
-          },
-          {
-            "name": "CFGEdge",
-            "type": "sql_class",
-            "lineno": 46,
-            "children": [],
-            "calls": [],
-            "table_name": "cfg_edges",
-            "model_fields": [
-              {
-                "name": "id",
-                "type": "Integer"
-              },
-              {
-                "name": "src_id",
-                "type": "Integer"
-              },
-              {
-                "name": "dst_id",
-                "type": "Integer"
-              },
-              {
-                "name": "label",
-                "type": "String"
-              }
-            ]
-          }
-        ]
-      }
-    }
-  ]
-}
-"""
-
-import ast
-import json
-from typing import Dict, Any, List, Set
 
 class ProjectAnalyzer:
     def __init__(self, input_data: Dict[str, Any]):
@@ -432,15 +33,17 @@ class ProjectAnalyzer:
         return mapping
     
     def _first_pass(self):
+        analyzing_dir = os.path.dirname(os.path.realpath(__file__)) + "/test/another_backend/"
         for module_info in self.input_data["modules"]:
-            file_path = module_info["module"]
+            file_path = analyzing_dir + module_info["module"]
             
             with open(file_path, 'r', encoding='utf-8') as file:
                 source_code = file.read()
             
             tree = ast.parse(source_code)
             
-            module_name = file_path[:-3].replace('/', '.')
+            # module_name = file_path[:-3].replace('/', '.')
+            module_name = file_path
             
             collector = DeclarationCollector(module_name, self.module_mapping)
             collector.visit(tree)
@@ -455,11 +58,32 @@ class ProjectAnalyzer:
             }
             
             self._update_project_index(module_name, collector.get_declarations())
-                
+
     def analyze(self) -> str:
         self._first_pass() # declarations
         self._second_pass() # calls
         return self._generate_output()
+      
+    def analyze_and_get_dict(self):
+        self._first_pass() # declarations
+        self._second_pass() # calls
+        
+        output = {"modules": []}
+        
+        for module_info in self.input_data["modules"]:
+            file_path = module_info["module"]
+            # module_name = file_path[:-3].replace('/', '.') if file_path.endswith('.py') else file_path
+            module_name = file_path
+            
+            module_data = self.modules_data.get(os.path.dirname(os.path.realpath(__file__)) + "/test/another_backend/" + module_name, {})
+            
+            output_module = {
+                "module": file_path,
+                "tree": module_data.get('tree', {"children": []})
+            }
+            output["modules"].append(output_module)
+            
+        return output
     
     def _update_project_index(self, module_name: str, declarations: Dict[str, Any]):
         for name, decl_info in declarations.items():
@@ -886,8 +510,11 @@ class CallAnalyzer(ast.NodeVisitor):
 
     def visit_Call(self, node: ast.Call):
         call_info = self._analyze_call(node)
-        if call_info:
-            self._add_call(call_info)
+        try:
+          if call_info:
+              self._add_call(call_info)
+        except Exception as e:
+          pass
         
         self.generic_visit(node)
     
