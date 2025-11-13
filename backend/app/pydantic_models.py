@@ -1,7 +1,3 @@
-from sqlalchemy import (
-    Column, Integer, String, ForeignKey, Text, JSON, create_engine
-)
-from sqlalchemy.orm import relationship, declarative_base, sessionmaker
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any

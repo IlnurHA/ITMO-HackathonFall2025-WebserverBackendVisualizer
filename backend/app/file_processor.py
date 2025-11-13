@@ -1,6 +1,6 @@
 import ast  # noqa: D100
 import json
-import cfg_visitor
+import app.cfg_visitor as cfg_visitor
 from typing import Any, Literal
 
 # TODO: process import using *

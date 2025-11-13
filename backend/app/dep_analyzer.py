@@ -17,7 +17,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
-from file_processor import ProjectAnalyzer
+from .file_processor import ProjectAnalyzer
 import sys
 
 
