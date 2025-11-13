@@ -14,7 +14,8 @@
     "react": "^19.2.0",
     "react-d3-tree": "^3.6.6",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.5"
+    "react-router-dom": "^7.9.5",
+    "react-force-graph-2d": "^1.21.16"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
