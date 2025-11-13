@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import RandomCircles from './pages/RandomCircles'
 import AnimatedCircles from './pages/AnimatedCircles'
 import TreePage from './pages/TreePage'
+import GraphPage from './pages/GraphPage'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/random-circles" Component={RandomCircles} />
           <Route path="/animated-circles" Component={AnimatedCircles} />
           <Route path="/tree" Component={TreePage} />
+          <Route path="/graph" Component={GraphPage} />
         </Routes>
       </div>
     </Router>

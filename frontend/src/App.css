@@ -23,5 +23,35 @@ header nav a {
 }
 
 header nav a:hover {
-  color: #007bff;
+  color: hsl(211, 100%, 92%);
+}
+
+.bg-blue-300 {
+  background-color: #e7f2ff;
+}
+
+.rounded-full {
+  border-radius: 5px;
+}
+
+.border {
+  border-style: solid;
+}
+
+.border-blue-800 {
+  border-color: hsl(217, 100%, 71%);
+}
+
+.px-2 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.z-20 {
+  z-index: 20;
+}
+
+
+.fixtranslate {
+  width: max-content;
 }
