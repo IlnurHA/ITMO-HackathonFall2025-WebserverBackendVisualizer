@@ -5,7 +5,7 @@ from pathlib import Path
 
 class ScanRequest(BaseModel):
     repo_root: str
-    root_module: str
+    root_module: Optional[str] = None
     include_tests: Optional[bool] = False
     max_depth: int = 0  # 0 = unlimited
     verbose: Optional[bool] = False
