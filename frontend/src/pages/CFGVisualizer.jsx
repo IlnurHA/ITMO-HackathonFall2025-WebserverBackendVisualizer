@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const CFGVisualizer = () => {
-  // Состояния компонента
   const [jsonData, setJsonData] = useState(null);
   const [repoPath, setRepoPath] = useState('');
   const [includeTests, setIncludeTests] = useState(false);
@@ -13,16 +12,31 @@ const CFGVisualizer = () => {
   
   // Функция для определения, содержит ли модуль API эндпоинты
   const hasEndpoints = (module) => {
-    // Проверяем, находится ли модуль в папке с роутами
     const modulePathLower = module.module.toLowerCase();
     
-    // Проверяем, есть ли у модуля функции-обработчики
     const hasHandlerFunctions = module.tree?.children?.some(child => 
       child.type === 'handler' || 
       (child.decorators && child.decorators.some(d => d.includes('router')))
     );
     
     return modulePathLower.includes('/api/routes/') || hasHandlerFunctions;
+  };
+  
+  // Функция для определения, содержит ли модуль SQL классы (модели)
+  const hasSqlClasses = (module) => {
+    // Проверяем импорты на наличие SQL-библиотек
+    const hasSqlImports = module.imports?.some(importName => 
+      importName.toLowerCase().includes('sqlmodel') || 
+      importName.toLowerCase().includes('sqlalchemy') || 
+      importName.toLowerCase().includes('sqlmodel')
+    );
+    
+    // Проверяем наличие классов в дереве
+    const hasClasses = module.tree?.children?.some(child => 
+      child.type === 'class'
+    );
+    
+    return hasSqlImports && hasClasses;
   };
   
   // Функция для получения информации об эндпоинтах модуля
@@ -139,10 +153,16 @@ const CFGVisualizer = () => {
             // Получаем только имя файла из полного пути
             const fileName = module.module.split('/').pop().split('\\').pop();
             const isEndpointFile = hasEndpoints(module);
+            const isSqlClassFile = hasSqlClasses(module);
             const endpoints = getModuleEndpoints(module);
             
+            // Фильтруем дочерние элементы: классы и функции
+            const classes = module.tree?.children?.filter(child => child.type === 'class') || [];
+            const functions = module.tree?.children?.filter(child => child.type === 'function' || 
+                  (child.type === 'handler' && !child.decorators?.some(d => d.includes('router')))) || [];
+            
             return (
-              <div key={index} className={`module-card ${isEndpointFile ? 'endpoint-module' : ''}`}>
+              <div key={index} className={`module-card ${isEndpointFile ? 'endpoint-module' : ''} ${isSqlClassFile ? 'sql-class-module' : ''}`}>
                 <div 
                   className="module-header"
                   onClick={() => handleNodeClick({
@@ -151,7 +171,9 @@ const CFGVisualizer = () => {
                     type: 'module'
                   })}
                 >
-                  <span className="folder-icon">{isEndpointFile ? '🚀' : '📁'}</span>
+                  <span className="folder-icon">
+                    {isEndpointFile ? '🚀' : isSqlClassFile ? '🗃️' : '📁'}
+                  </span>
                   <span className="module-name">{fileName}</span>
                   <span className="module-path">{module.module}</span>
                   
@@ -161,7 +183,33 @@ const CFGVisualizer = () => {
                       API Routes
                     </span>
                   )}
+                  
+                  {/* Тег для файлов с SQL классами */}
+                  {isSqlClassFile && (
+                    <span className="sql-class-badge">
+                      SQL Class
+                    </span>
+                  )}
                 </div>
+                
+                {/* Отображаем SQL классы только в отдельной секции */}
+                {isSqlClassFile && classes.length > 0 && (
+                  <div className="sql-classes-container">
+                    <div className="sql-classes-header">
+                      SQL Классы ({classes.length}):
+                    </div>
+                    <div className="sql-classes-grid">
+                      {classes.map((cls, clsIndex) => (
+                        <div key={clsIndex} className="sql-class-item">
+                          <span className="sql-class-icon">🗃️</span>
+                          <span className="sql-class-name" title={cls.name}>
+                            {cls.name.length > 35 ? `${cls.name.substring(0, 32)}...` : cls.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 {endpoints.length > 0 && (
                   <div className="endpoints-container">
@@ -180,18 +228,24 @@ const CFGVisualizer = () => {
                   </div>
                 )}
                 
-                {module.tree?.children && module.tree.children.length > 0 ? (
+                {/* Отображаем только функции, не включая классы */}
+                {functions.length > 0 ? (
                   <div className="functions-container">
                     <div className="functions-header">
-                      Функции ({module.tree.children.length}):
+                      Функции ({functions.length}):
                       {isEndpointFile && (
                         <span className="endpoint-count-badge">
                           Эндпоинты: {endpoints.length}
                         </span>
                       )}
+                      {isSqlClassFile && (
+                        <span className="sql-class-count-badge">
+                          Классов: {classes.length}
+                        </span>
+                      )}
                     </div>
                     <div className="functions-grid">
-                      {module.tree.children.map((func, funcIndex) => {
+                      {functions.map((func, funcIndex) => {
                         // Проверяем, является ли функция эндпоинтом
                         const isEndpointFunction = func.type === 'handler' || 
                                                   (func.decorators && func.decorators.some(d => d.includes('router')));
@@ -342,7 +396,7 @@ const CFGVisualizer = () => {
       {!jsonData && (
         <div className="path-input-container">
           <h2>Анализ зависимостей проекта</h2>
-          <p>Система автоматически определит файлы с API эндпоинтами</p>
+          <p>Система автоматически определит файлы с API эндпоинтами и SQL классами</p>
           <form onSubmit={handleSubmit} className="path-form">
             <div className="form-group">
               <label htmlFor="repoPath">Путь к репозиторию:</label>
@@ -448,6 +502,10 @@ const CFGVisualizer = () => {
               <span className="legend-icon endpoint-delete">DEL</span>
               <span className="legend-text">DELETE запросы</span>
             </div>
+            <div className="legend-item">
+              <span className="legend-icon sql-class">SQL</span>
+              <span className="legend-text">SQL классы</span>
+            </div>
           </div>
         </div>
       )}
@@ -463,7 +521,6 @@ const CFGVisualizer = () => {
           color: #e0e6ff;
           font-family: 'Arial', sans-serif;
           overflow-x: hidden;
-          padding-bottom: 80px; /* Добавляем отступ внизу для прокрутки */
         }
         
         .app-header {
@@ -620,7 +677,8 @@ const CFGVisualizer = () => {
           flex: 1;
           overflow: auto;
           padding: 20px;
-          padding-bottom: 60px; /* Отступ для легенды */
+          padding-bottom: 160px; /* Увеличенный отступ для легенды */
+          min-height: calc(100vh - 200px);
         }
         
         .error-container {
@@ -704,6 +762,12 @@ const CFGVisualizer = () => {
           box-shadow: 0 0 10px rgba(255, 170, 51, 0.1);
         }
         
+        .module-card.sql-class-module {
+          border-left: 3px solid #5d9eff;
+          background-color: rgba(93, 158, 255, 0.05);
+          box-shadow: 0 0 10px rgba(93, 158, 255, 0.1);
+        }
+        
         .module-header {
           font-size: 18px;
           font-weight: bold;
@@ -722,12 +786,20 @@ const CFGVisualizer = () => {
           color: #ffb74d;
         }
         
+        .module-card.sql-class-module .module-header {
+          color: #7ab1ff;
+        }
+        
         .module-header:hover {
           background-color: rgba(106, 90, 205, 0.1);
         }
         
         .module-card.endpoint-module .module-header:hover {
           background-color: rgba(255, 170, 51, 0.1);
+        }
+        
+        .module-card.sql-class-module .module-header:hover {
+          background-color: rgba(93, 158, 255, 0.1);
         }
         
         .folder-icon {
@@ -767,6 +839,64 @@ const CFGVisualizer = () => {
           background-color: rgba(76, 175, 80, 0.2);
           color: #4caf50;
           border: 1px solid rgba(76, 175, 80, 0.4);
+        }
+        
+        .sql-class-badge {
+          font-size: 12px;
+          font-weight: bold;
+          padding: 2px 8px;
+          border-radius: 12px;
+          margin-left: 10px;
+          display: inline-block;
+          min-width: 70px;
+          text-align: center;
+          background-color: rgba(93, 158, 255, 0.2);
+          color: #5d9eff;
+          border: 1px solid rgba(93, 158, 255, 0.4);
+        }
+        
+        .sql-classes-container {
+          margin-left: 20px;
+          margin-top: 10px;
+          background-color: rgba(93, 158, 255, 0.05);
+          border-radius: 6px;
+          padding: 10px;
+          border: 1px solid rgba(93, 158, 255, 0.3);
+        }
+        
+        .sql-classes-header {
+          font-weight: bold;
+          color: #5d9eff;
+          margin-bottom: 8px;
+          font-size: 16px;
+        }
+        
+        .sql-classes-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 8px;
+        }
+        
+        .sql-class-item {
+          padding: 8px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background-color: rgba(30, 30, 45, 0.7);
+          border-left: 2px solid #5d9eff;
+        }
+        
+        .sql-class-icon {
+          color: #5d9eff;
+          font-size: 16px;
+        }
+        
+        .sql-class-name {
+          font-size: 14px;
+          color: #e0e6ff;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         
         .endpoints-container {
@@ -874,6 +1004,15 @@ const CFGVisualizer = () => {
           padding: 2px 8px;
           border-radius: 12px;
           border: 1px solid rgba(255, 170, 51, 0.4);
+        }
+        
+        .sql-class-count-badge {
+          font-size: 14px;
+          background-color: rgba(93, 158, 255, 0.2);
+          color: #5d9eff;
+          padding: 2px 8px;
+          border-radius: 12px;
+          border: 1px solid rgba(93, 158, 255, 0.4);
         }
         
         .functions-grid {
@@ -1166,45 +1305,46 @@ const CFGVisualizer = () => {
           margin-bottom: 20px;
         }
         
-        /* Легенда для эндпоинтов - размещена внизу, но не перекрывает контент */
+        /* Исправленное позиционирование легенды */
         .legend-container {
           position: fixed;
-          bottom: 15px;
+          bottom: 20px;
           left: 50%;
           transform: translateX(-50%);
           background-color: rgba(30, 30, 45, 0.95);
           border-radius: 8px;
           border: 1px solid #3a4266;
-          padding: 10px 15px;
+          padding: 15px 20px;
           z-index: 90;
           max-width: 90%;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
         
         .legend-title {
           font-weight: bold;
           color: #5d73e5;
-          margin-bottom: 8px;
-          font-size: 14px;
+          margin-bottom: 12px;
+          font-size: 16px;
           text-align: center;
         }
         
         .legend-items {
           display: flex;
           flex-wrap: wrap;
-          gap: 12px;
+          gap: 20px;
           justify-content: center;
         }
         
         .legend-item {
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 8px;
         }
         
         .legend-icon {
           display: inline-block;
-          width: 28px;
-          height: 20px;
+          width: 32px;
+          height: 22px;
           border-radius: 4px;
           display: flex;
           align-items: center;
@@ -1237,8 +1377,14 @@ const CFGVisualizer = () => {
           border: 1px solid rgba(233, 30, 99, 0.4);
         }
         
+        .legend-icon.sql-class {
+          background-color: rgba(93, 158, 255, 0.2);
+          color: #5d9eff;
+          border: 1px solid rgba(93, 158, 255, 0.4);
+        }
+        
         .legend-text {
-          font-size: 12px;
+          font-size: 14px;
           color: #b4c8e6;
         }
         
@@ -1265,13 +1411,18 @@ const CFGVisualizer = () => {
             grid-template-columns: 1fr;
           }
           
-          .legend-items {
-            flex-direction: column;
-            gap: 6px;
+          .sql-classes-grid {
+            grid-template-columns: 1fr;
           }
           
-          .visualizer-container {
-            padding-bottom: 140px; /* Больше отступа для мобильных устройств */
+          .legend-container {
+            bottom: 15px;
+            padding: 12px 15px;
+            font-size: 13px;
+          }
+          
+          .main-content {
+            padding-bottom: 180px; /* Еще больший отступ для мобильных устройств */
           }
         }
       `}</style>
