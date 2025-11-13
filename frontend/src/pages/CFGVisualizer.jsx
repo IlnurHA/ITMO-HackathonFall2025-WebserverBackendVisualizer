@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const CFGVisualizer = () => {
+  // Состояния компонента
   const [jsonData, setJsonData] = useState(null);
   const [repoPath, setRepoPath] = useState('');
   const [includeTests, setIncludeTests] = useState(false);
@@ -10,6 +11,35 @@ const CFGVisualizer = () => {
   const [error, setError] = useState(null);
   const [processingStats, setProcessingStats] = useState(null);
   
+  // Функция для определения, содержит ли модуль API эндпоинты
+  const hasEndpoints = (module) => {
+    // Проверяем, находится ли модуль в папке с роутами
+    const modulePathLower = module.module.toLowerCase();
+    
+    // Проверяем, есть ли у модуля функции-обработчики
+    const hasHandlerFunctions = module.tree?.children?.some(child => 
+      child.type === 'handler' || 
+      (child.decorators && child.decorators.some(d => d.includes('router')))
+    );
+    
+    return modulePathLower.includes('/api/routes/') || hasHandlerFunctions;
+  };
+  
+  // Функция для получения информации об эндпоинтах модуля
+  const getModuleEndpoints = (module) => {
+    if (!module.tree?.children) return [];
+    
+    return module.tree.children.filter(child => 
+      child.type === 'handler' || 
+      (child.decorators && child.decorators.some(d => d.includes('router')))
+    ).map(handler => ({
+      name: handler.name,
+      method: handler.http_method?.toUpperCase() || 'UNKNOWN',
+      path: handler.path || '/',
+      type: 'api'
+    }));
+  };
+
   useEffect(() => {
     if (!jsonData) return;
     
@@ -18,16 +48,9 @@ const CFGVisualizer = () => {
     
     try {
       setTimeout(() => {
-        if (mode === 'overview') {
-        } else if (mode === 'cfg' && selectedFunction) {
-        }
-        
         const endTime = performance.now();
         const duration = (endTime - startTime).toFixed(2);
-        setProcessingStats({ 
-          duration
-        });
-        
+        setProcessingStats({ duration });
       }, 100);
     } catch (err) {
       const endTime = performance.now();
@@ -37,7 +60,7 @@ const CFGVisualizer = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [mode, selectedFunction, jsonData]);
+  }, [jsonData]);
 
   const handleNodeClick = (node) => {
     if (!node) return;
@@ -67,7 +90,7 @@ const CFGVisualizer = () => {
         body: JSON.stringify({
           repo_root: repoPath,
           include_tests: includeTests,
-          max_depth: 10 
+          max_depth: 3
         }),
       });
 
@@ -113,9 +136,13 @@ const CFGVisualizer = () => {
         <div className="modules-container">
           <h3 className="section-title">Структура проекта</h3>
           {jsonData.modules.map((module, index) => {
+            // Получаем только имя файла из полного пути
             const fileName = module.module.split('/').pop().split('\\').pop();
+            const isEndpointFile = hasEndpoints(module);
+            const endpoints = getModuleEndpoints(module);
+            
             return (
-              <div key={index} className="module-card">
+              <div key={index} className={`module-card ${isEndpointFile ? 'endpoint-module' : ''}`}>
                 <div 
                   className="module-header"
                   onClick={() => handleNodeClick({
@@ -124,18 +151,52 @@ const CFGVisualizer = () => {
                     type: 'module'
                   })}
                 >
-                  <span className="folder-icon">📁</span>
+                  <span className="folder-icon">{isEndpointFile ? '🚀' : '📁'}</span>
                   <span className="module-name">{fileName}</span>
                   <span className="module-path">{module.module}</span>
+                  
+                  {/* Тег для файлов с ручками */}
+                  {isEndpointFile && (
+                    <span className="endpoint-badge api">
+                      API Routes
+                    </span>
+                  )}
                 </div>
+                
+                {endpoints.length > 0 && (
+                  <div className="endpoints-container">
+                    <div className="endpoints-header">
+                      API Эндпоинты ({endpoints.length}):
+                    </div>
+                    <div className="endpoints-list">
+                      {endpoints.map((endpoint, epIndex) => (
+                        <div key={epIndex} className={`endpoint-item ${endpoint.method.toLowerCase()}`}>
+                          <span className="endpoint-method">{endpoint.method}</span>
+                          <span className="endpoint-path">{endpoint.path}</span>
+                          <span className="endpoint-name">{endpoint.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 {module.tree?.children && module.tree.children.length > 0 ? (
                   <div className="functions-container">
                     <div className="functions-header">
                       Функции ({module.tree.children.length}):
+                      {isEndpointFile && (
+                        <span className="endpoint-count-badge">
+                          Эндпоинты: {endpoints.length}
+                        </span>
+                      )}
                     </div>
                     <div className="functions-grid">
                       {module.tree.children.map((func, funcIndex) => {
+                        // Проверяем, является ли функция эндпоинтом
+                        const isEndpointFunction = func.type === 'handler' || 
+                                                  (func.decorators && func.decorators.some(d => d.includes('router')));
+                        
+                        // Сокращаем длинные имена функций
                         const displayName = func.name.length > 30 
                           ? `${func.name.substring(0, 27)}...` 
                           : func.name;
@@ -143,7 +204,7 @@ const CFGVisualizer = () => {
                         return (
                           <div 
                             key={funcIndex}
-                            className={`function-item ${func.cfg ? '' : 'no-cfg'}`}
+                            className={`function-item ${func.cfg ? '' : 'no-cfg'} ${isEndpointFunction ? 'endpoint-function' : ''}`}
                             onClick={(e) => handleNodeClick({
                               label: func.name,
                               type: 'function',
@@ -153,8 +214,13 @@ const CFGVisualizer = () => {
                             }, e)}
                             title={func.name}
                           >
-                            <span className="function-icon">●</span> 
+                            <span className="function-icon">{isEndpointFunction ? '🔌' : '●'}</span> 
                             <span className="function-name">{displayName}</span>
+                            {isEndpointFunction && func.http_method && (
+                              <span className={`endpoint-type-badge ${func.http_method.toLowerCase()}`}>
+                                {func.http_method.toUpperCase()}
+                              </span>
+                            )}
                             {!func.cfg && <span className="no-cfg-badge">(без CFG)</span>}
                           </div>
                         );
@@ -186,7 +252,12 @@ const CFGVisualizer = () => {
         <div className="cfg-container">
           <div className="cfg-header">
             <h3 className="cfg-title">
-              CFG для функции: <span className="function-name" title={selectedFunction.label}>{selectedFunction.label}</span> в <span className="module-name">{selectedFunction.fileName}</span>
+              CFG для функции: <span className="function-name" title={selectedFunction.label}>
+                {selectedFunction.label}
+                {/* Показываем тип эндпоинта, если это обработчик */}
+                {selectedFunction.http_method && ` (${selectedFunction.http_method.toUpperCase()})`}
+                {selectedFunction.path && ` ${selectedFunction.path}`}
+              </span> в <span className="module-name">{selectedFunction.fileName}</span>
             </h3>
             <button onClick={handleBack} className="back-button">
               ← Вернуться к обзору
@@ -195,6 +266,7 @@ const CFGVisualizer = () => {
           
           <div className="cfg-nodes-container">
             {selectedFunction.cfg.nodes.map((node, index) => {
+              // Сокращаем длинные метки узлов
               const displayLabel = node.label && node.label.length > 40 
                 ? `${node.label.substring(0, 37)}...` 
                 : node.label || 'Без названия';
@@ -270,6 +342,7 @@ const CFGVisualizer = () => {
       {!jsonData && (
         <div className="path-input-container">
           <h2>Анализ зависимостей проекта</h2>
+          <p>Система автоматически определит файлы с API эндпоинтами</p>
           <form onSubmit={handleSubmit} className="path-form">
             <div className="form-group">
               <label htmlFor="repoPath">Путь к репозиторию:</label>
@@ -354,6 +427,31 @@ const CFGVisualizer = () => {
         {!isLoading && renderTextGraph()}
       </main>
       
+      {/* Легенда для эндпоинтов */}
+      {jsonData && (
+        <div className="legend-container">
+          <div className="legend-title">Легенда:</div>
+          <div className="legend-items">
+            <div className="legend-item">
+              <span className="legend-icon endpoint-get">GET</span>
+              <span className="legend-text">GET запросы</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-icon endpoint-post">POST</span>
+              <span className="legend-text">POST запросы</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-icon endpoint-put">PUT</span>
+              <span className="legend-text">PUT запросы</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-icon endpoint-delete">DEL</span>
+              <span className="legend-text">DELETE запросы</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* CSS стили */}
       <style jsx>{`
         .visualizer-container {
@@ -365,6 +463,7 @@ const CFGVisualizer = () => {
           color: #e0e6ff;
           font-family: 'Arial', sans-serif;
           overflow-x: hidden;
+          padding-bottom: 80px; /* Добавляем отступ внизу для прокрутки */
         }
         
         .app-header {
@@ -375,6 +474,9 @@ const CFGVisualizer = () => {
           justify-content: space-between;
           align-items: center;
           flex-shrink: 0;
+          position: sticky;
+          top: 0;
+          z-index: 100;
         }
         
         .header-content h1 {
@@ -518,6 +620,7 @@ const CFGVisualizer = () => {
           flex: 1;
           overflow: auto;
           padding: 20px;
+          padding-bottom: 60px; /* Отступ для легенды */
         }
         
         .error-container {
@@ -572,6 +675,17 @@ const CFGVisualizer = () => {
           color: #5d73e5;
           margin-bottom: 15px;
           font-size: 20px;
+          display: flex;
+          align-items: center;
+        }
+        
+        .section-title::after {
+          content: '';
+          display: inline-block;
+          height: 1px;
+          background: linear-gradient(90deg, #5d73e5, transparent);
+          margin-left: 15px;
+          flex: 1;
         }
         
         .module-card {
@@ -580,6 +694,14 @@ const CFGVisualizer = () => {
           padding-left: 15px;
           border-bottom: 1px solid #3a4266;
           padding-bottom: 15px;
+          transition: all 0.3s;
+          position: relative;
+        }
+        
+        .module-card.endpoint-module {
+          border-left: 3px solid #ffaa33;
+          background-color: rgba(255, 170, 51, 0.05);
+          box-shadow: 0 0 10px rgba(255, 170, 51, 0.1);
         }
         
         .module-header {
@@ -593,10 +715,19 @@ const CFGVisualizer = () => {
           align-items: center;
           gap: 8px;
           flex-wrap: wrap;
+          position: relative;
+        }
+        
+        .module-card.endpoint-module .module-header {
+          color: #ffb74d;
         }
         
         .module-header:hover {
           background-color: rgba(106, 90, 205, 0.1);
+        }
+        
+        .module-card.endpoint-module .module-header:hover {
+          background-color: rgba(255, 170, 51, 0.1);
         }
         
         .folder-icon {
@@ -621,6 +752,106 @@ const CFGVisualizer = () => {
           display: inline-block;
         }
         
+        .endpoint-badge {
+          font-size: 12px;
+          font-weight: bold;
+          padding: 2px 8px;
+          border-radius: 12px;
+          margin-left: 10px;
+          display: inline-block;
+          min-width: 80px;
+          text-align: center;
+        }
+        
+        .endpoint-badge.api {
+          background-color: rgba(76, 175, 80, 0.2);
+          color: #4caf50;
+          border: 1px solid rgba(76, 175, 80, 0.4);
+        }
+        
+        .endpoints-container {
+          margin-left: 20px;
+          margin-top: 10px;
+          background-color: rgba(76, 175, 80, 0.05);
+          border-radius: 6px;
+          padding: 10px;
+          border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .endpoints-header {
+          font-weight: bold;
+          color: #4caf50;
+          margin-bottom: 8px;
+          font-size: 16px;
+          display: flex;
+          justify-content: space-between;
+        }
+        
+        .endpoints-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 8px;
+        }
+        
+        .endpoint-item {
+          padding: 8px;
+          border-radius: 4px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          background-color: rgba(30, 30, 45, 0.7);
+        }
+        
+        .endpoint-item.get {
+          border-left: 3px solid #009688;
+        }
+        
+        .endpoint-item.post {
+          border-left: 3px solid #f44336;
+        }
+        
+        .endpoint-item.put {
+          border-left: 3px solid #9e9e9e;
+        }
+        
+        .endpoint-item.delete {
+          border-left: 3px solid #e91e63;
+        }
+        
+        .endpoint-method {
+          font-weight: bold;
+          font-size: 14px;
+        }
+        
+        .endpoint-item.get .endpoint-method {
+          color: #009688;
+        }
+        
+        .endpoint-item.post .endpoint-method {
+          color: #f44336;
+        }
+        
+        .endpoint-item.put .endpoint-method {
+          color: #9e9e9e;
+        }
+        
+        .endpoint-item.delete .endpoint-method {
+          color: #e91e63;
+        }
+        
+        .endpoint-path {
+          font-family: monospace;
+          font-size: 13px;
+          color: #8ab4d6;
+        }
+        
+        .endpoint-name {
+          font-size: 13px;
+          color: #b4c8e6;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
         .functions-container {
           margin-left: 20px;
           margin-top: 10px;
@@ -631,6 +862,18 @@ const CFGVisualizer = () => {
           color: #6aa7b4;
           margin-bottom: 8px;
           font-size: 16px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .endpoint-count-badge {
+          font-size: 14px;
+          background-color: rgba(255, 170, 51, 0.2);
+          color: #ffaa33;
+          padding: 2px 8px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 170, 51, 0.4);
         }
         
         .functions-grid {
@@ -653,10 +896,18 @@ const CFGVisualizer = () => {
           overflow: hidden;
         }
         
+        .function-item.endpoint-function {
+          border: 1px solid #ffaa33;
+          background-color: rgba(255, 170, 51, 0.15);
+        }
+        
         .function-item:hover {
           transform: translateY(-2px);
           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-          background-color: rgba(93, 115, 229, 0.15);
+        }
+        
+        .function-item.endpoint-function:hover {
+          box-shadow: 0 0 10px rgba(255, 170, 51, 0.3);
         }
         
         .function-item.no-cfg {
@@ -668,14 +919,59 @@ const CFGVisualizer = () => {
         .function-icon {
           color: #8ab4d6;
           font-weight: bold;
+          font-size: 16px;
+        }
+        
+        .function-item.endpoint-function .function-icon {
+          color: #ffaa33;
         }
         
         .function-name {
           display: inline-block;
-          max-width: 200px;
+          max-width: 160px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+        }
+        
+        .endpoint-type-badge {
+          font-size: 10px;
+          font-weight: bold;
+          padding: 1px 6px;
+          border-radius: 8px;
+          margin-left: 5px;
+          min-width: 40px;
+          text-align: center;
+        }
+        
+        .endpoint-type-badge.get {
+          background-color: rgba(0, 150, 136, 0.2);
+          color: #009688;
+          border: 1px solid rgba(0, 150, 136, 0.4);
+        }
+        
+        .endpoint-type-badge.post {
+          background-color: rgba(244, 67, 54, 0.2);
+          color: #f44336;
+          border: 1px solid rgba(244, 67, 54, 0.4);
+        }
+        
+        .endpoint-type-badge.put {
+          background-color: rgba(158, 158, 158, 0.2);
+          color: #9e9e9e;
+          border: 1px solid rgba(158, 158, 158, 0.4);
+        }
+        
+        .endpoint-type-badge.delete {
+          background-color: rgba(233, 30, 99, 0.2);
+          color: #e91e63;
+          border: 1px solid rgba(233, 30, 99, 0.4);
+        }
+        
+        .endpoint-type-badge.patch {
+          background-color: rgba(103, 58, 183, 0.2);
+          color: #673ab7;
+          border: 1px solid rgba(103, 58, 183, 0.4);
         }
         
         .no-cfg-badge {
@@ -870,6 +1166,82 @@ const CFGVisualizer = () => {
           margin-bottom: 20px;
         }
         
+        /* Легенда для эндпоинтов - размещена внизу, но не перекрывает контент */
+        .legend-container {
+          position: fixed;
+          bottom: 15px;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: rgba(30, 30, 45, 0.95);
+          border-radius: 8px;
+          border: 1px solid #3a4266;
+          padding: 10px 15px;
+          z-index: 90;
+          max-width: 90%;
+        }
+        
+        .legend-title {
+          font-weight: bold;
+          color: #5d73e5;
+          margin-bottom: 8px;
+          font-size: 14px;
+          text-align: center;
+        }
+        
+        .legend-items {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          justify-content: center;
+        }
+        
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        
+        .legend-icon {
+          display: inline-block;
+          width: 28px;
+          height: 20px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          font-weight: bold;
+        }
+        
+        .legend-icon.endpoint-get {
+          background-color: rgba(0, 150, 136, 0.2);
+          color: #009688;
+          border: 1px solid rgba(0, 150, 136, 0.4);
+        }
+        
+        .legend-icon.endpoint-post {
+          background-color: rgba(244, 67, 54, 0.2);
+          color: #f44336;
+          border: 1px solid rgba(244, 67, 54, 0.4);
+        }
+        
+        .legend-icon.endpoint-put {
+          background-color: rgba(158, 158, 158, 0.2);
+          color: #9e9e9e;
+          border: 1px solid rgba(158, 158, 158, 0.4);
+        }
+        
+        .legend-icon.endpoint-delete {
+          background-color: rgba(233, 30, 99, 0.2);
+          color: #e91e63;
+          border: 1px solid rgba(233, 30, 99, 0.4);
+        }
+        
+        .legend-text {
+          font-size: 12px;
+          color: #b4c8e6;
+        }
+        
         @media (max-width: 768px) {
           .functions-grid {
             grid-template-columns: 1fr;
@@ -887,6 +1259,19 @@ const CFGVisualizer = () => {
           .header-actions {
             width: 100%;
             margin-left: 0;
+          }
+          
+          .endpoints-list {
+            grid-template-columns: 1fr;
+          }
+          
+          .legend-items {
+            flex-direction: column;
+            gap: 6px;
+          }
+          
+          .visualizer-container {
+            padding-bottom: 140px; /* Больше отступа для мобильных устройств */
           }
         }
       `}</style>
