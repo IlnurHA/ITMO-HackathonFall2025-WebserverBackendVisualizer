@@ -3,7 +3,7 @@ from typing import Literal  # noqa: D100
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from .dep_analyzer import analyze_project
+from .dep_analyzer import get_json_dict
 from .pydantic_models import ScanRequest, ScanResult
 
 app = FastAPI(title="Arch-Visualizer MVP")
@@ -25,10 +25,9 @@ def healthcheck() -> dict[Literal["status"], str]:  # noqa: D103
 @app.post("/scan", response_model=ScanResult)
 def scan(req: ScanRequest) -> ScanRequest:  # noqa: D103
     try:
-        dependencies = analyze_project(
+        dependencies = get_json_dict(
             project_path=req.repo_root,
-            include_external=not req.include_tests,
-            root_module=req.root_module,
+            included_external=not req.include_tests,
             max_depth=req.max_depth,
         )
     except FileNotFoundError as e:
