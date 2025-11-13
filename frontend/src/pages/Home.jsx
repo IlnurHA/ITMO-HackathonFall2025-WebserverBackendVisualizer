@@ -23,7 +23,7 @@ const Home = () => {
         body: JSON.stringify({
           repo_root: repoPath,
           include_tests: includeTests,
-          max_depth: 3 // Используем фиксированное значение глубины
+          max_depth: 10 // Используем фиксированное значение глубины
         }),
       });
 
