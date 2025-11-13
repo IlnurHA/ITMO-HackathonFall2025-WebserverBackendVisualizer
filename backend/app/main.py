@@ -1,5 +1,4 @@
-from typing import Literal  # noqa: D100
-
+from typing import Literal
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,20 +9,18 @@ app = FastAPI(title="Arch-Visualizer MVP")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
 @app.get("/")
-def healthcheck() -> dict[Literal["status"], str]:  # noqa: D103
+def healthcheck() -> dict[Literal["status"], str]:
     return {"status": "ok"}
 
-
 @app.post("/scan", response_model=ScanResult)
-def scan(req: ScanRequest) -> ScanRequest:  # noqa: D103
+def scan(req: ScanRequest) -> ScanResult:
     try:
         dependencies = get_json_dict(
             project_path=req.repo_root,
@@ -31,10 +28,12 @@ def scan(req: ScanRequest) -> ScanRequest:  # noqa: D103
             max_depth=req.max_depth,
         )
     except FileNotFoundError as e:
-        raise HTTPException(status_code=400, detail=str(e))  # noqa: B904
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"internal error: {e}")  # noqa: B904
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"internal error: {e}")
 
-    return ScanResult(
-        dependencies=dependencies,
-    )
+    return ScanResult(dependencies=dependencies)
+
+@app.get("/graph")
+def test_graph():
+    return {"message": "This is a test endpoint - use POST /scan instead"}
