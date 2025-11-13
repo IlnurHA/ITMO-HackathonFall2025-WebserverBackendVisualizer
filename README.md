@@ -22,7 +22,7 @@
 ## Возможности
 
 - Анализ исходного кода проекта на нескольких уровнях (файлы, функции, классы, CFG)
-- Поиск FastAPI ручек и моделей SQLAlchemy
+- Поиск ручек и моделей, вызовов функций
 - Формирование структуры зависимостей в формате JSON
 - REST API для получения результатов анализа
 - Интерфейс для визуализации архитектуры в браузере
@@ -37,7 +37,7 @@
 
 ### Backend (`/backend`)
 
-**Технологии:** Python, FastAPI, SQLAlchemy, AST
+**Технологии:** Python, FastAPI, AST
 
 Бэкенд отвечает за парсинг и анализ кода, генерацию графа и предоставление API.
 
@@ -49,13 +49,13 @@
 - `pydantic_models.py` — описание структур данных для API  
 - `main.py` — основной модуль FastAPI-приложения  
 - `requirements.txt` — зависимости проекта  
-- `Dockerfile`, `docker-compose.yml` — для контейнеризации и запуска
+- `Dockerfile`, `docker-compose.yml` — для контейнеризации и запуска (только для frontend, опционально)
 
 #### Запуск backend
 
 ```bash
 cd backend
-docker compose up --build
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 #### Пример API-запроса
@@ -103,7 +103,7 @@ npm run dev
 
 - Разместите проект для анализа в каталоге /backend/app/test
 
-- Запустите backend (через Docker)
+- Запустите backend
 
 - Перейдите во frontend и откройте интерфейс визуализации
 
@@ -143,8 +143,6 @@ npm run dev
 │   │   ├── main.py
 │   │   ├── pydantic_models.py
 │   │   └── test/...
-│   ├── docker-compose.yml
-│   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
