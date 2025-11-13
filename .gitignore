@@ -208,3 +208,5 @@ __marimo__/
 
 .vscode
 temp.txt
+test.json
+dependencies.json

@@ -1,5 +1,8 @@
 import file_example_imported
 
+def local_function():
+    pass
+
 class MyClass:
     def __init__(self):
         file_example_imported.create_class()
