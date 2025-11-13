@@ -33,7 +33,11 @@ const Home = () => {
       }
 
       const result = await response.json();
+
+      //ТУТА ЗАБИРАЕМ ДАННЫЕ С БЭКА
       setData(result.dependencies);
+
+
     } catch (err) {
       setError(err.message || "Failed to fetch data from server");
       console.error("Error:", err);
