@@ -45,7 +45,7 @@ function transformedData(json, expandedNodes = new Set()) {
                     // Show calls if child is expanded
                     if (expandedNodes.has(childId)) {
                         child.calls.forEach(call => {
-                            const callId = `${childId}.${call.function}`
+                            const callId = `${call.module || module.module}.${call.function}`
                             links.push({
                                 source: childId,
                                 target: callId,
@@ -483,7 +483,7 @@ const GraphPage = () => {
                 return `translate(${d.x - nodeWidth / 2}, ${d.y - nodeHeight / 2})`;
             });
         })
-
+        // app/utils.py.generate_new_account_email.render_email_template
         nodesSelection.call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
