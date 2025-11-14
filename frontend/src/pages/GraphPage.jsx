@@ -4,23 +4,23 @@ import tmpData from "./sample.json"
 import { createRoot } from "react-dom/client"
 
 
-const RADIUS = 150;
-const LINK_DISTANCE = 400;
-const FORCE_RADIUS_FACTOR = 1;
-const NODE_STRENGTH = 1;
+const RADIUS = 350;
+const LINK_DISTANCE = 300;
+const FORCE_RADIUS_FACTOR = 0.2;
+const NODE_STRENGTH = 0.001;
 
 function transformedData(json, expandedNodes = new Set()) {
     const nodes = [{
         id: "root",
         type: "root",
         level: 0,
-        hasChildren: json.modules && json.modules.length > 0
+        hasChildren: json.dependencies.modules && json.dependencies.modules.length > 0
     }]
     const links = []
 
     // Always show modules when root is expanded
     if (expandedNodes.has("root") || expandedNodes.size === 0) {
-        json.modules.forEach(module => {
+        json.dependencies.modules.forEach(module => {
             const moduleNode = {
                 id: module.module,
                 type: "module",
@@ -127,9 +127,9 @@ const GraphNode = ({ node, isExpanded, onToggle }) => {
 };
 
 const GraphPage = () => {
-    const [dataset, setDataset] = useState(transformedData(tmpData))
+    const [dataset, setDataset] = useState(null)
     const [expandedNodes, setExpandedNodes] = useState(new Set(["root"])) // Start with root expanded
-    const [loadedData, setLoadedData] = useState(tmpData) // Add state to store loaded data
+    const [loadedData, setLoadedData] = useState(null) // Add state to store loaded data
     const hoveredNodeIdRef = useRef(null)
     const ref = useRef(null)
     const containerRef = useRef(null)
@@ -138,6 +138,39 @@ const GraphPage = () => {
     const gRef = useRef(null)
     const simulationRef = useRef(null)
     const nodePositionsRef = useRef(new Map()) // Store node positions
+    const [repoPath, setRepoPath] = useState("")
+    const [includeTests, setIncludeTests] = useState(false)
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        try {
+            const response = await fetch("http://localhost:8000/scan", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    repo_root: repoPath,
+                    include_tests: includeTests,
+                    max_depth: 3
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `Server returned status ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log("ping");
+
+            setLoadedData(result);
+        } catch (err) {
+            console.error("Error:", err);
+        }
+    };
 
     // Toggle node expansion/collapse
     const toggleNode = (nodeId) => {
@@ -266,14 +299,18 @@ const GraphPage = () => {
 
     // Update dataset when expanded nodes change
     useEffect(() => {
+        if (loadedData == null) return;
         storeNodePositions(); // Store positions before updating dataset
         const newDataset = transformedData(loadedData, expandedNodes);
         applyStoredPositions(newDataset.nodes); // Apply stored positions to new nodes
         setDataset(newDataset);
+        console.log("pong");
+
     }, [expandedNodes, loadedData]); // Added loadedData to dependencies
 
     // Initialize the simulation and graph
     useEffect(() => {
+        if (dataset == null) return;
         if (!gRef.current || !dataset.nodes || !dataset.links) return
 
         if (simulationRef.current) {
@@ -439,6 +476,29 @@ const GraphPage = () => {
                         onChange={handleFileChange}
                         className="file-input"
                     />
+                    <form onSubmit={handleSubmit} className="path-form">
+                        <label htmlFor="repoPath">Путь к репозиторию:</label>
+                        <input
+                            id="repoPath"
+                            type="text"
+                            value={repoPath}
+                            onChange={(e) => setRepoPath(e.target.value)}
+                            placeholder="/path/to/your/project"
+                            required
+                            className="path-input"
+                        />
+                        <input
+                            id="includeTests"
+                            type="checkbox"
+                            checked={includeTests}
+                            onChange={(e) => setIncludeTests(e.target.checked)}
+                        />
+                        <label htmlFor="includeTests">Включить тестовые зависимости</label>
+                        <button
+                            type="submit"
+                            className="analyze-button"
+                        >Загрузить</button>
+                    </form>
                     <button
                         onClick={expandAll}
                         className="btn btn-expand"
