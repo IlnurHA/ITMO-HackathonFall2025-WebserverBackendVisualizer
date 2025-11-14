@@ -1,26 +1,4 @@
 services:
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_PASSWORD: password
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  backend:
-    build: ./backend
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - db
-    environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:password@db:5432/postgres
-
   frontend:
     build: ./frontend
     ports:
@@ -28,9 +6,6 @@ services:
     volumes:
       - ./frontend:/app
       - node_modules:/app/node_modules
-    depends_on:
-      - backend
 
 volumes:
-  pgdata:
   node_modules:

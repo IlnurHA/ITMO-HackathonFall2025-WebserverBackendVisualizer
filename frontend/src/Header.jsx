@@ -8,6 +8,7 @@ const Header = () => {
             <Link to="/animated-circles">Animated Circles</Link>
             <Link to="/tree">Tree</Link>
             <Link to="/graph">Graph</Link>
+            <Link to="cfg-visualizer">CFG Visualizer</Link>
         </nav>
     </header>
 }

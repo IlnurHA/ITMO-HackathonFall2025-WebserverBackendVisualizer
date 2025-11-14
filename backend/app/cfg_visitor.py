@@ -60,7 +60,7 @@ class CFGVisitor(ast.NodeVisitor):
         if self.target_function:
             for stmt in node.body:
                 if (
-                    isinstance(stmt, ast.FunctionDef)
+                    isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef))
                     and stmt.name == self.target_function
                 ):
                     self.visit_FunctionDef(stmt)
@@ -111,6 +111,38 @@ class CFGVisitor(ast.NodeVisitor):
 
         # Create function exit
         func_exit = self._create_node("Function Exit")
+        self.exit_node = func_exit
+        if self.current_node:
+            self._connect_nodes(self.current_node, func_exit)
+
+        self.in_target_function = False
+        return func_exit
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):  # noqa: ANN201, D102
+        # Check if this is our target function
+        print(f"{node.name=}")
+        if self.target_function and node.name != self.target_function:
+            return None
+
+        self.in_target_function = True
+
+        # Create function entry node
+        func_entry = self._create_node(f"Async Function Entry: {node.name}", node)
+        self.entry_node = func_entry
+        self.current_node = func_entry
+
+        # Create parameters node
+        params_text = ", ".join(arg.arg for arg in node.args.args)
+        params_node = self._create_node(f"Parameters: {params_text}")
+        self._connect_nodes(self.current_node, params_node)
+        self.current_node = params_node
+
+        # Visit function body
+        for stmt in node.body:
+            self.visit(stmt)
+
+        # Create function exit
+        func_exit = self._create_node("Async Function Exit")
         self.exit_node = func_exit
         if self.current_node:
             self._connect_nodes(self.current_node, func_exit)
@@ -339,6 +371,8 @@ def generate_cfg_from_file(filename: str, function_name: str | None = None) -> s
     """Generate CFG JSON from a Python file."""  # noqa: DOC201
     with open(filename, encoding="utf-8") as f:  # noqa: FURB101, PTH123
         code = f.read()
+    print(f"{filename=}")
+    print(f"{function_name=}")
     return generate_cfg_from_code(code, function_name=function_name)
 
 
@@ -350,7 +384,9 @@ def get_functions_in_file(filename: str) -> list[str]:
     try:
         tree = ast.parse(code)
         return [
-            node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
         ]
     except SyntaxError:
         return []
@@ -360,7 +396,7 @@ def get_functions_in_file(filename: str) -> list[str]:
 if __name__ == "__main__":
     # Example Python code
     example_code = '''
-def factorial(n):
+async def factorial(n):
     """Calculate factorial of n"""
     if n <= 1:
         return 1

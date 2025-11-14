@@ -6,6 +6,7 @@ import RandomCircles from './pages/RandomCircles'
 import AnimatedCircles from './pages/AnimatedCircles'
 import TreePage from './pages/TreePage'
 import GraphPage from './pages/GraphPage'
+import CFGVisualizer from './pages/CFGVisualizer'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/animated-circles" Component={AnimatedCircles} />
           <Route path="/tree" Component={TreePage} />
           <Route path="/graph" Component={GraphPage} />
+          <Route path="/cfg-visualizer" element={<CFGVisualizer />} />
         </Routes>
       </div>
     </Router>
