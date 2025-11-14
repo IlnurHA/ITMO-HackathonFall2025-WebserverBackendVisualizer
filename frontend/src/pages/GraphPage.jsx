@@ -1,11 +1,10 @@
 import { useLayoutEffect, useState, useRef, useEffect } from "react"
 import * as d3 from "d3"
-import tmpData from "./sample.json"
 import { createRoot } from "react-dom/client"
 
 
 const RADIUS = 350;
-const LINK_DISTANCE = 300;
+const LINK_DISTANCE = 400;
 const FORCE_RADIUS_FACTOR = 0.2;
 const NODE_STRENGTH = 0.001;
 
@@ -29,7 +28,7 @@ function transformedData(json, expandedNodes = new Set()) {
                 originalId: module.module
             }
             nodes.push(moduleNode)
-            links.push({ source: "root", target: module.module })
+            links.push({ source: "root", target: module.module, len_c: 1.5, strength: 0.2 })
 
             // Show children if module is expanded
             if (expandedNodes.has(module.module)) {
@@ -43,7 +42,7 @@ function transformedData(json, expandedNodes = new Set()) {
                         parent: module.module
                     }
                     nodes.push(childNode)
-                    links.push({ source: module.module, target: child.name })
+                    links.push({ source: module.module, target: child.name, len_c: 0.5 })
 
                     // Show calls if child is expanded
                     if (expandedNodes.has(child.name)) {
@@ -64,45 +63,6 @@ function transformedData(json, expandedNodes = new Set()) {
 
     return { nodes, links }
 }
-
-const computeGraphDistances = (nodes, links) => {
-    const graph = {};
-    nodes.forEach((node) => {
-        graph[node.id] = [];
-    });
-
-    links.forEach((link) => {
-        if (link.source.id) {
-            graph[link.source.id].push(link.target.id);
-            graph[link.target.id].push(link.source.id);
-        }
-    });
-
-    const distances = {};
-
-    nodes.forEach((node) => {
-        const queue = [node.id];
-        const visited = new Set([node.id]);
-        const dist = { [node.id]: 0 };
-
-        while (queue.length > 0) {
-            const current = queue.shift();
-            const neighbors = graph[current];
-
-            for (const neighbor of neighbors) {
-                if (!visited.has(neighbor)) {
-                    visited.add(neighbor);
-                    dist[neighbor] = dist[current] + 1;
-                    queue.push(neighbor);
-                }
-            }
-        }
-
-        distances[node.id] = dist;
-    });
-
-    return distances;
-};
 
 // Node component for rendering individual nodes
 const GraphNode = ({ node, isExpanded, onToggle }) => {
@@ -195,27 +155,7 @@ const GraphPage = () => {
 
     // Expand all nodes
     const expandAll = () => {
-        const allNodeIds = new Set();
-        const collectNodes = (obj, prefix = "") => {
-            if (obj.modules) {
-                obj.modules.forEach(module => {
-                    const moduleId = module.module;
-                    allNodeIds.add(moduleId);
-                    if (module.tree && module.tree.children) {
-                        module.tree.children.forEach(child => {
-                            allNodeIds.add(child.name);
-                            if (child.calls) {
-                                child.calls.forEach(call => {
-                                    allNodeIds.add(call.function);
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-        };
-        collectNodes(tmpData);
-        allNodeIds.add("root");
+        const allNodeIds = new Set(dataset.nodes.map(it => it.id));
         setExpandedNodes(allNodeIds);
     };
 
@@ -319,7 +259,7 @@ const GraphPage = () => {
 
         // Create a more stable simulation by preserving some momentum
         simulationRef.current = d3.forceSimulation(dataset.nodes)
-            .force("link", d3.forceLink(dataset.links).id(d => d.id).distance(LINK_DISTANCE))
+            .force("link", d3.forceLink(dataset.links).id(d => d.id).distance(d => (d.len_c) * LINK_DISTANCE))
             .force("charge", d3.forceManyBody().strength(d => d.strength * NODE_STRENGTH))
             .force("collision", d3.forceCollide(RADIUS * FORCE_RADIUS_FACTOR))
             .force("center", d3.forceCenter(width / 2, height / 2).strength(0.02)) // Reduced strength
@@ -337,10 +277,13 @@ const GraphPage = () => {
             .selectAll("line.link")
             .data(dataset.links, l => `${l.source.id || l.source}-${l.target.id || l.target}`)
             .join(
-                enter => (enter.append("line")
-                    .classed("link", true)
-                    .attr("stroke", d => d.isCall ? "#666" : "black")
-                    .attr("stroke-width", d => d.isCall ? 1 : 2)),
+                enter => {
+                    const line = enter.append("line")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 1)
+                        .classed("link", true)
+                    return line;
+                },
                 update => update,
                 exit => exit.remove()
             )
@@ -355,6 +298,8 @@ const GraphPage = () => {
                     .classed("node--module", d => d.type === "module")
                     .classed("node--class", d => d.type === "class")
                     .classed("node--function", d => d.type === "function")
+                    .classed("node--handler", d => d.type == "handler")
+                    .classed("node--sql_class", d => d.type === "sql_class")
                     .attr("width", 1)
                     .attr("height", 1)
                     .attr("overflow", "visible")),
@@ -388,23 +333,59 @@ const GraphPage = () => {
             hoveredNodeIdRef.current = d.id
             linksSelection
                 .filter(link => (link.source.id === d.id || link.target.id === d.id))
-                .attr("stroke", "red")
-                .attr("stroke-width", 3)
+                .attr("stroke", "#e74c3c") // Bright red for highlighted links
+                .attr("stroke-width", 2)
+                .style("opacity", 1)
+                .attr("stroke-dasharray", null); // Remove dashes on hover
+
+            // Dim unrelated links
+            linksSelection
+                .filter(link => (link.source.id !== d.id && link.target.id !== d.id))
+                .style("opacity", 0.2);
+
+            // Highlight connected nodes
+            nodesSelection
+                .filter(node => node.id === d.id)
+                .style("opacity", 1);
+
+            nodesSelection
+                .filter(node => {
+                    if (node.id === d.id) return false;
+                    return linksSelection
+                        .filter(link => (link.source.id === d.id || link.target.id === d.id))
+                        .data()
+                        .some(link => link.source.id === node.id || link.target.id === node.id);
+                })
+                .style("opacity", 0.8);
+
+            // Dim unrelated nodes
+            nodesSelection
+                .filter(node => {
+                    if (node.id === d.id) return false;
+                    return !linksSelection
+                        .filter(link => (link.source.id === d.id || link.target.id === d.id))
+                        .data()
+                        .some(link => link.source.id === node.id || link.target.id === node.id);
+                })
+                .style("opacity", 0.2);
         }
 
         const onMouseOut = (event, d) => {
             hoveredNodeIdRef.current = null
+
+            // Restore normal link styling
             linksSelection
-                .filter(link => (link.source.id === d.id || link.target.id === d.id))
-                .attr("stroke", d => d.isCall ? "#666" : "black")
-                .attr("stroke-width", d => d.isCall ? 1 : 2)
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+                .style("opacity", 1);
+
+            // Restore normal node styling
+            nodesSelection.style("opacity", 1);
         }
 
         nodesSelection
             .on("mouseover", onMouseOver)
             .on("mouseout", onMouseOut)
-
-        const graphDistances = computeGraphDistances(dataset.nodes, dataset.links)
 
         simulationRef.current.on("tick", () => {
             linksSelection
@@ -414,29 +395,6 @@ const GraphPage = () => {
                 .attr("y2", (d) => d.target.y)
 
             nodesSelection.attr("transform", (d) => `translate(${d.x}, ${d.y})`)
-
-            if (hoveredNodeIdRef.current) {
-                linksSelection
-                    .style("opacity", (d) => {
-                        const distance = graphDistances[hoveredNodeIdRef.current][d.target.id] || graphDistances[hoveredNodeIdRef.current][d.source.id];
-                        const maxDistance = 3;
-                        const opacity = 1 - (distance / maxDistance);
-                        return Math.max(0.1, opacity);
-                    });
-
-                nodesSelection
-                    .transition().duration(50)
-                    .style("opacity", (d) => {
-                        if (d.id === hoveredNodeIdRef.current) return 1;
-                        const distance = graphDistances[hoveredNodeIdRef.current][d.id];
-                        const maxDistance = 3;
-                        const opacity = 1 - (distance / maxDistance);
-                        return Math.max(0.1, opacity);
-                    });
-            } else {
-                linksSelection.style("opacity", 1)
-                nodesSelection.style("opacity", 1)
-            }
         })
 
         nodesSelection.call(d3.drag()

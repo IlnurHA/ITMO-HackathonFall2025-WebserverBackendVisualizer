@@ -61,25 +61,30 @@ header nav a:hover {
   color: #fff;
 }
 
-/* purple */
 .graph-node--module {
   background: #4ade80;
   color: #083d1f;
 }
 
-/* green */
 .graph-node--class {
   background: #facc15;
   color: #5a4300;
 }
 
-/* yellowish */
 .graph-node--function {
   background: #60a5fa;
   color: #0a2a52;
 }
 
-/* blue */
+.graph-node--handler {
+  background: #ffaffb;
+  color: #ffffff;
+}
+
+.graph-node--sql_class {
+  background: #a58472;
+  color: #ffffff;
+}
 
 .graph-node {
   position: relative;
