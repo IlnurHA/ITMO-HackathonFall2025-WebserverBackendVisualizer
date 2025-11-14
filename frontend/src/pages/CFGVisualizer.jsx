@@ -11,32 +11,21 @@ const CFGVisualizer = () => {
   const [processingStats, setProcessingStats] = useState(null);
   
   // Функция для определения, содержит ли модуль API эндпоинты
-  const hasEndpoints = (module) => {
-    const modulePathLower = module.module.toLowerCase();
-    
+  const hasEndpoints = (module) => {    
     const hasHandlerFunctions = module.tree?.children?.some(child => 
-      child.type === 'handler' || 
-      (child.decorators && child.decorators.some(d => d.includes('router')))
-    );
+      child.type === 'handler');
     
-    return modulePathLower.includes('/api/routes/') || hasHandlerFunctions;
+    return hasHandlerFunctions;
   };
   
   // Функция для определения, содержит ли модуль SQL классы (модели)
-  const hasSqlClasses = (module) => {
-    // Проверяем импорты на наличие SQL-библиотек
-    const hasSqlImports = module.imports?.some(importName => 
-      importName.toLowerCase().includes('sqlmodel') || 
-      importName.toLowerCase().includes('sqlalchemy') || 
-      importName.toLowerCase().includes('sqlmodel')
-    );
-    
+  const hasSqlClasses = (module) => {  
     // Проверяем наличие классов в дереве
     const hasClasses = module.tree?.children?.some(child => 
-      child.type === 'class'
+      child.type === 'sql_class'
     );
     
-    return hasSqlImports && hasClasses;
+    return hasClasses;
   };
   
   // Функция для получения информации об эндпоинтах модуля
@@ -44,8 +33,7 @@ const CFGVisualizer = () => {
     if (!module.tree?.children) return [];
     
     return module.tree.children.filter(child => 
-      child.type === 'handler' || 
-      (child.decorators && child.decorators.some(d => d.includes('router')))
+      child.type === 'handler'
     ).map(handler => ({
       name: handler.name,
       method: handler.http_method?.toUpperCase() || 'UNKNOWN',
@@ -157,7 +145,7 @@ const CFGVisualizer = () => {
             const endpoints = getModuleEndpoints(module);
             
             // Фильтруем дочерние элементы: классы и функции
-            const classes = module.tree?.children?.filter(child => child.type === 'class') || [];
+            const classes = module.tree?.children?.filter(child => child.type === 'class' || child.type === 'sql_class') || [];
             const functions = module.tree?.children?.filter(child => child.type === 'function' || 
                   (child.type === 'handler' && !child.decorators?.some(d => d.includes('router')))) || [];
             
@@ -199,7 +187,26 @@ const CFGVisualizer = () => {
                       SQL Классы ({classes.length}):
                     </div>
                     <div className="sql-classes-grid">
-                      {classes.map((cls, clsIndex) => (
+                      {classes.filter((cls) => cls.type === 'sql_class').map((cls, clsIndex) => (
+                        <div key={clsIndex} className="sql-class-item">
+                          <span className="sql-class-icon">🗃️</span>
+                          <span className="sql-class-name" title={cls.name}>
+                            {cls.name.length > 35 ? `${cls.name.substring(0, 32)}...` : cls.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Отображаем классы только в отдельной секции */}
+                {classes.filter(cls => (cls.type === 'class')).length > 0 && (
+                  <div className="sql-classes-container">
+                    <div className="sql-classes-header">
+                      Классы ({classes.filter(cls => (cls.type === 'class')).length}):
+                    </div>
+                    <div className="sql-classes-grid">
+                      {classes.filter((cls) => cls.type === 'class').map((cls, clsIndex) => (
                         <div key={clsIndex} className="sql-class-item">
                           <span className="sql-class-icon">🗃️</span>
                           <span className="sql-class-name" title={cls.name}>
