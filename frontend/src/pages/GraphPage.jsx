@@ -7,6 +7,7 @@ function transformedData(json, expandedNodes = new Set()) {
         id: "root",
         name: "root",
         type: "root",
+        attributes: { tmp: "root elemnt does not have arguments" },
         level: 0,
         hasChildren: json.dependencies.modules && json.dependencies.modules.length > 0
     }]
@@ -15,13 +16,15 @@ function transformedData(json, expandedNodes = new Set()) {
     // Always show modules when root is expanded
     if (expandedNodes.has("root") || expandedNodes.size === 0) {
         json.dependencies.modules.forEach(module => {
+            const { tree: _, ...attributes } = module
             const moduleNode = {
                 id: module.module,
                 name: module.module,
                 type: "module",
                 level: 1,
                 hasChildren: module.tree && module.tree.children && module.tree.children.length > 0,
-                originalId: module.module
+                originalId: module.module,
+                attributes: attributes
             }
             nodes.push(moduleNode)
             links.push({ source: "root", target: module.module, len_c: 1, strength: 0.2 })
@@ -30,6 +33,7 @@ function transformedData(json, expandedNodes = new Set()) {
             if (expandedNodes.has(module.module)) {
                 module.tree.children.forEach(child => {
                     const childId = `${module.module}.${child.name}` // Make unique
+                    const { calls: _, ...attributes } = child
                     const childNode = {
                         id: childId,
                         name: child.name,
@@ -37,7 +41,8 @@ function transformedData(json, expandedNodes = new Set()) {
                         level: 2,
                         hasChildren: child.calls && child.calls.length > 0,
                         originalId: child.name,
-                        parent: module.module
+                        parent: module.module,
+                        attributes: attributes
                     }
                     nodes.push(childNode)
                     links.push({ source: module.module, target: childId, len_c: 0.5 })
@@ -64,9 +69,16 @@ function transformedData(json, expandedNodes = new Set()) {
 }
 
 // Node component for rendering individual nodes
-const GraphNode = ({ node, isExpanded, onToggle }) => {
+const GraphNode = ({ node, isExpanded, onToggle, setSelectedNode, setShowSidePanel }) => {
     return (
-        <div className={`graph-node graph-node--${node.type}`}>
+        <div
+            className={`graph-node graph-node--${node.type}`}
+            onClick={() => {
+                setSelectedNode(node);
+                setShowSidePanel(true);
+            }}
+            style={{ cursor: "pointer" }}
+        >
             <h3 className="node-title">{node.name}</h3>
             <p className="node-type">{node.type}</p>
             {node.hasChildren && (
@@ -85,6 +97,31 @@ const GraphNode = ({ node, isExpanded, onToggle }) => {
     );
 };
 
+
+const SidePanel = ({ node, onClose }) => {
+    if (!node) return null;
+
+    return (
+        <div className="side-panel">
+            <div className="side-panel-header">
+                <h3>{node.name}</h3>
+                <button
+                    onClick={onClose}
+                    className="close-button"
+                >
+                    ×
+                </button>
+            </div>
+            <div className="side-panel-content">
+                <h4>Node Information:</h4>
+                <pre className="json-display">
+                    {JSON.stringify(node.attributes, null, 2)}
+                </pre>
+            </div>
+        </div>
+    );
+};
+
 const GraphPage = () => {
     const [dataset, setDataset] = useState(null)
     const [expandedNodes, setExpandedNodes] = useState(new Set(["root"])) // Start with root expanded
@@ -99,6 +136,8 @@ const GraphPage = () => {
     const nodePositionsRef = useRef(new Map()) // Store node positions
     const [repoPath, setRepoPath] = useState("")
     const [includeTests, setIncludeTests] = useState(false)
+    const [selectedNode, setSelectedNode] = useState(null)
+    const [showSidePanel, setShowSidePanel] = useState(false)
 
     // Force parameters with sliders
     const [showSimulationControls, setShowSimulationControls] = useState(false)
@@ -407,6 +446,8 @@ const GraphPage = () => {
                     node={node}
                     isExpanded={isExpanded}
                     onToggle={toggleNode}
+                    setSelectedNode={setSelectedNode}
+                    setShowSidePanel={setShowSidePanel}
                 />
             );
         });
@@ -688,6 +729,16 @@ const GraphPage = () => {
             <div ref={containerRef} style={{ height: "calc(100vh - 80px)", width: "100%" }}>
                 <svg ref={ref} height={height} width={width} />
             </div>
+            {/* Side Panel */}
+            {showSidePanel && (
+                <SidePanel
+                    node={selectedNode}
+                    onClose={() => {
+                        setShowSidePanel(false);
+                        setSelectedNode(null);
+                    }}
+                />
+            )}
         </div>
     )
 }
