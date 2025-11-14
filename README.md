@@ -158,3 +158,7 @@ npm run dev
 ├── docker-compose.yml
 └── README.md
 ```
+
+#### Ссылки
+
+[Презентация](https://docs.google.com/presentation/d/19M5m5fQ3W2ea2Ebw1T8RYd_Hzlv4d590k8dl7_idT4E/edit?usp=sharing)
