@@ -55,3 +55,119 @@ header nav a:hover {
 .fixtranslate {
   width: max-content;
 }
+
+.graph-node--root {
+  background: #a78bfa;
+  color: #fff;
+}
+
+/* purple */
+.graph-node--module {
+  background: #4ade80;
+  color: #083d1f;
+}
+
+/* green */
+.graph-node--class {
+  background: #facc15;
+  color: #5a4300;
+}
+
+/* yellowish */
+.graph-node--function {
+  background: #60a5fa;
+  color: #0a2a52;
+}
+
+/* blue */
+
+.graph-node {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  min-width: 110px;
+  user-select: none;
+}
+
+.node-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.node-type {
+  font-size: 11px;
+  opacity: 0.8;
+  margin: 0;
+}
+
+/* Bottom text expand/collapse button */
+.expand-button-bottom {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -10px;
+  padding: 2px 8px;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.expand-button-bottom:hover {
+  background: #f3f4f6;
+}
+
+
+/* Navigation controls */
+.nav-controls {
+  padding: 1rem;
+  background-color: #f3f4f6;
+  border-bottom: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.file-input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-expand {
+  background-color: #10b981;
+}
+
+.btn-expand:hover {
+  background-color: #059669;
+}
+
+.btn-collapse {
+  background-color: #ef4444;
+}
+
+.btn-collapse:hover {
+  background-color: #dc2626;
+}
+
+.expanded-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
