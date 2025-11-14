@@ -24,7 +24,7 @@ function transformedData(json, expandedNodes = new Set()) {
                 originalId: module.module
             }
             nodes.push(moduleNode)
-            links.push({ source: "root", target: module.module, len_c: 2, strength: 0.2 })
+            links.push({ source: "root", target: module.module, len_c: 1, strength: 0.2 })
 
             // Show children if module is expanded
             if (expandedNodes.has(module.module)) {
@@ -89,7 +89,6 @@ const GraphPage = () => {
     const [dataset, setDataset] = useState(null)
     const [expandedNodes, setExpandedNodes] = useState(new Set(["root"])) // Start with root expanded
     const [loadedData, setLoadedData] = useState(null) // Add state to store loaded data
-    const [clusterSpecialTypes, setClusterSpecialTypes] = useState(true) // Add toggle for clustering
     const hoveredNodeIdRef = useRef(null)
     const ref = useRef(null)
     const containerRef = useRef(null)
@@ -102,10 +101,14 @@ const GraphPage = () => {
     const [includeTests, setIncludeTests] = useState(false)
 
     // Force parameters with sliders
+    const [showSimulationControls, setShowSimulationControls] = useState(false)
+    const [useModuleRadial, setUseModuleRadial] = useState(false)
+    const [clusterSpecialTypes, setClusterSpecialTypes] = useState(false)
+
     const [linkDistance, setLinkDistance] = useState(400)
-    const [linkStrength, setLinkStrength] = useState(0.5)
-    const [nodeRepulsion, setNodeRepulsion] = useState(-1)
-    const [collisionRadius, setCollisionRadius] = useState(70)
+    const [linkStrength, setLinkStrength] = useState(0.1)
+    const [nodeRepulsion, setNodeRepulsion] = useState(50)
+    const [collisionRadius, setCollisionRadius] = useState(45)
     const [clusterStrength, setClusterStrength] = useState(0.1)
     const [moduleRadialStrength, setModuleRadialStrength] = useState(0.15)
     const [centerStrength, setCenterStrength] = useState(0.02)
@@ -290,6 +293,7 @@ const GraphPage = () => {
 
         // Custom force to arrange modules radially around root
         const moduleRadialForce = () => {
+            if (!useModuleRadial) return;
             const modules = dataset.nodes.filter(n => n.type === 'module');
             const root = dataset.nodes.find(n => n.type === 'root');
 
@@ -313,8 +317,6 @@ const GraphPage = () => {
             .force("link", d3.forceLink(dataset.links)
                 .id(d => d.id)
                 .distance(d => {
-                    // Longer links for modules to root
-                    if (d.source.type === 'root' || d.target.type === 'root') return 3;
                     // Shorter links for children
                     return (d.len_c || 1) * linkDistance;
                 })
@@ -328,11 +330,9 @@ const GraphPage = () => {
             )
             .force("charge", d3.forceManyBody()
                 .strength(d => {
-                    // Stronger repulsion for modules
-                    if (d.type === 'module') return -8;
                     // Weaker for handler/sql_class if clustering
                     if (clusterSpecialTypes && (d.type === 'handler' || d.type === 'sql_class')) return -50;
-                    return d.strength * 0.001 || nodeRepulsion;
+                    return d.strength || -nodeRepulsion;
                 })
             )
             .force("collision", d3.forceCollide()
@@ -491,7 +491,7 @@ const GraphPage = () => {
 
         // Reduce initial alpha to make movement smoother
         simulationRef.current.alpha(0.3).restart();
-    }, [dataset, height, width, expandedNodes, clusterSpecialTypes, centerStrength, clusterStrength, moduleRadialStrength, linkDistance, linkStrength, nodeRepulsion, collisionRadius])
+    }, [dataset, height, width, expandedNodes, clusterSpecialTypes, centerStrength, clusterStrength, moduleRadialStrength, linkDistance, linkStrength, nodeRepulsion, collisionRadius, useModuleRadial])
 
     function dragstarted(event) {
         if (!event.active) simulationRef.current.alphaTarget(0.3).restart()
@@ -556,91 +556,127 @@ const GraphPage = () => {
                     >
                         Collapse All
                     </button>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <input
-                            id="clusterToggle"
-                            type="checkbox"
-                            checked={clusterSpecialTypes}
-                            onChange={(e) => setClusterSpecialTypes(e.target.checked)}
-                        />
-                        <label htmlFor="clusterToggle">Cluster Handlers/SQL</label>
-                    </div>
+                    {/* Simulation Controls Menu */}
+                    <div style={{ borderLeft: "1px solid #ccc", paddingLeft: "1rem", marginLeft: "0.5rem" }}>
+                        <button
+                            type="button"
+                            onClick={() => setShowSimulationControls(!showSimulationControls)}
+                            style={{ marginBottom: "0.5rem" }}
+                        >
+                            {showSimulationControls ? "Hide" : "Show"} Simulation Controls
+                        </button>
 
-                    {/* Force Parameter Sliders */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                        <label>Link Distance:</label>
-                        <input
-                            type="range"
-                            min="50"
-                            max="800"
-                            value={linkDistance}
-                            onChange={(e) => setLinkDistance(Number(e.target.value))}
-                        />
-                        <span>{linkDistance}</span>
+                        {showSimulationControls && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                                {/* Row 1: Link Controls */}
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                                    <label>Link Distance:</label>
+                                    <input
+                                        type="range"
+                                        min="50"
+                                        max="800"
+                                        value={linkDistance}
+                                        onChange={(e) => setLinkDistance(Number(e.target.value))}
+                                    />
+                                    <span>{linkDistance}</span>
 
-                        <label>Link Strength:</label>
-                        <input
-                            type="range"
-                            min="0.1"
-                            max="2"
-                            step="0.1"
-                            value={linkStrength}
-                            onChange={(e) => setLinkStrength(Number(e.target.value))}
-                        />
-                        <span>{linkStrength.toFixed(1)}</span>
+                                    <label>Link Strength:</label>
+                                    <input
+                                        type="range"
+                                        min="0.0"
+                                        max="0.5"
+                                        step="0.01"
+                                        value={linkStrength}
+                                        onChange={(e) => setLinkStrength(Number(e.target.value))}
+                                    />
+                                    <span>{linkStrength.toFixed(1)}</span>
+                                </div>
 
-                        <label>Node Repulsion:</label>
-                        <input
-                            type="range"
-                            min="-50"
-                            max="0"
-                            value={nodeRepulsion}
-                            onChange={(e) => setNodeRepulsion(Number(e.target.value))}
-                        />
-                        <span>{nodeRepulsion}</span>
+                                {/* Row 2: Node Controls */}
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                                    <label>Node Repulsion:</label>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={nodeRepulsion}
+                                        onChange={(e) => setNodeRepulsion(Number(e.target.value))}
+                                    />
+                                    <span>{nodeRepulsion}</span>
 
-                        <label>Collision Radius:</label>
-                        <input
-                            type="range"
-                            min="10"
-                            max="200"
-                            value={collisionRadius}
-                            onChange={(e) => setCollisionRadius(Number(e.target.value))}
-                        />
-                        <span>{collisionRadius}</span>
+                                    <label>Collision Radius:</label>
+                                    <input
+                                        type="range"
+                                        min="10"
+                                        max="50"
+                                        value={collisionRadius}
+                                        onChange={(e) => setCollisionRadius(Number(e.target.value))}
+                                    />
+                                    <span>{collisionRadius}</span>
+                                </div>
 
-                        <label>Cluster Strength:</label>
-                        <input
-                            type="range"
-                            min="0"
-                            max="0.5"
-                            step="0.01"
-                            value={clusterStrength}
-                            onChange={(e) => setClusterStrength(Number(e.target.value))}
-                        />
-                        <span>{clusterStrength.toFixed(2)}</span>
+                                {/* Row 3: Cluster Controls */}
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                                    <label>
+                                        <input
+                                            id="clusterToggle"
+                                            type="checkbox"
+                                            checked={clusterSpecialTypes}
+                                            onChange={(e) => setClusterSpecialTypes(e.target.checked)}
+                                        />
+                                        Cluster Handlers/SQL
+                                    </label>
 
-                        <label>Module Radial:</label>
-                        <input
-                            type="range"
-                            min="0"
-                            max="0.5"
-                            step="0.01"
-                            value={moduleRadialStrength}
-                            onChange={(e) => setModuleRadialStrength(Number(e.target.value))}
-                        />
-                        <span>{moduleRadialStrength.toFixed(2)}</span>
+                                    <label>Cluster Strength:</label>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="0.11"
+                                        step="0.01"
+                                        value={clusterStrength}
+                                        onChange={(e) => setClusterStrength(Number(e.target.value))}
+                                    />
+                                    <span>{clusterStrength.toFixed(2)}</span>
+                                </div>
 
-                        <label>Center Strength:</label>
-                        <input
-                            type="range"
-                            min="0"
-                            max="0.1"
-                            step="0.01"
-                            value={centerStrength}
-                            onChange={(e) => setCenterStrength(Number(e.target.value))}
-                        />
-                        <span>{centerStrength.toFixed(2)}</span>
+                                {/* Row 4: Module Radial Controls */}
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                                    <label>
+                                        <input
+                                            id="moduleRadialToggle"
+                                            type="checkbox"
+                                            onChange={(e) => setUseModuleRadial(e.target.checked)}
+                                        />
+                                        Module Radial Layout
+                                    </label>
+
+                                    <label>Radial Strength:</label>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="0.5"
+                                        step="0.01"
+                                        value={moduleRadialStrength}
+                                        onChange={(e) => setModuleRadialStrength(Number(e.target.value))}
+                                    />
+                                    <span>{moduleRadialStrength.toFixed(2)}</span>
+                                </div>
+
+                                {/* Row 5: Center Controls */}
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                                    <label>Center Strength:</label>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.01"
+                                        value={centerStrength}
+                                        onChange={(e) => setCenterStrength(Number(e.target.value))}
+                                    />
+                                    <span>{centerStrength.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="expanded-info">
