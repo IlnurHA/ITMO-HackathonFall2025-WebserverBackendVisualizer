@@ -2,15 +2,10 @@ import { useLayoutEffect, useState, useRef, useEffect } from "react"
 import * as d3 from "d3"
 import { createRoot } from "react-dom/client"
 
-
-const RADIUS = 350;
-const LINK_DISTANCE = 400;
-const FORCE_RADIUS_FACTOR = 0.2;
-const NODE_STRENGTH = 0.001;
-
 function transformedData(json, expandedNodes = new Set()) {
     const nodes = [{
         id: "root",
+        name: "root",
         type: "root",
         level: 0,
         hasChildren: json.dependencies.modules && json.dependencies.modules.length > 0
@@ -22,19 +17,22 @@ function transformedData(json, expandedNodes = new Set()) {
         json.dependencies.modules.forEach(module => {
             const moduleNode = {
                 id: module.module,
+                name: module.module,
                 type: "module",
                 level: 1,
                 hasChildren: module.tree && module.tree.children && module.tree.children.length > 0,
                 originalId: module.module
             }
             nodes.push(moduleNode)
-            links.push({ source: "root", target: module.module, len_c: 1.5, strength: 0.2 })
+            links.push({ source: "root", target: module.module, len_c: 2, strength: 0.2 })
 
             // Show children if module is expanded
             if (expandedNodes.has(module.module)) {
                 module.tree.children.forEach(child => {
+                    const childId = `${module.module}.${child.name}` // Make unique
                     const childNode = {
-                        id: child.name,
+                        id: childId,
+                        name: child.name,
                         type: child.type,
                         level: 2,
                         hasChildren: child.calls && child.calls.length > 0,
@@ -42,14 +40,15 @@ function transformedData(json, expandedNodes = new Set()) {
                         parent: module.module
                     }
                     nodes.push(childNode)
-                    links.push({ source: module.module, target: child.name, len_c: 0.5 })
+                    links.push({ source: module.module, target: childId, len_c: 0.5 })
 
                     // Show calls if child is expanded
-                    if (expandedNodes.has(child.name)) {
+                    if (expandedNodes.has(childId)) {
                         child.calls.forEach(call => {
+                            const callId = `${childId}.${call.function}`
                             links.push({
-                                source: child.name,
-                                target: call.function,
+                                source: childId,
+                                target: callId,
                                 strength: 0,
                                 isCall: true,
                                 parent: child.name
@@ -68,7 +67,7 @@ function transformedData(json, expandedNodes = new Set()) {
 const GraphNode = ({ node, isExpanded, onToggle }) => {
     return (
         <div className={`graph-node graph-node--${node.type}`}>
-            <h3 className="node-title">{node.id}</h3>
+            <h3 className="node-title">{node.name}</h3>
             <p className="node-type">{node.type}</p>
             {node.hasChildren && (
                 <button
@@ -90,6 +89,7 @@ const GraphPage = () => {
     const [dataset, setDataset] = useState(null)
     const [expandedNodes, setExpandedNodes] = useState(new Set(["root"])) // Start with root expanded
     const [loadedData, setLoadedData] = useState(null) // Add state to store loaded data
+    const [clusterSpecialTypes, setClusterSpecialTypes] = useState(true) // Add toggle for clustering
     const hoveredNodeIdRef = useRef(null)
     const ref = useRef(null)
     const containerRef = useRef(null)
@@ -100,6 +100,15 @@ const GraphPage = () => {
     const nodePositionsRef = useRef(new Map()) // Store node positions
     const [repoPath, setRepoPath] = useState("")
     const [includeTests, setIncludeTests] = useState(false)
+
+    // Force parameters with sliders
+    const [linkDistance, setLinkDistance] = useState(400)
+    const [linkStrength, setLinkStrength] = useState(0.5)
+    const [nodeRepulsion, setNodeRepulsion] = useState(-1)
+    const [collisionRadius, setCollisionRadius] = useState(70)
+    const [clusterStrength, setClusterStrength] = useState(0.1)
+    const [moduleRadialStrength, setModuleRadialStrength] = useState(0.15)
+    const [centerStrength, setCenterStrength] = useState(0.02)
 
 
     const handleSubmit = async (e) => {
@@ -257,12 +266,85 @@ const GraphPage = () => {
             simulationRef.current.stop()
         }
 
-        // Create a more stable simulation by preserving some momentum
+        // Custom force to cluster handler and sql_class nodes
+        const clusterForce = () => {
+            if (!clusterSpecialTypes) return;
+
+            const handlerNodes = dataset.nodes.filter(n => n.type === 'handler');
+            const sqlClassNodes = dataset.nodes.filter(n => n.type === 'sql_class');
+
+            // Define cluster centers (adjust positions as needed)
+            const handlerCenter = { x: width * 0.25, y: height * 0.75 };
+            const sqlClassCenter = { x: width * 0.75, y: height * 0.75 };
+
+            handlerNodes.forEach(node => {
+                node.vx += (handlerCenter.x - node.x) * clusterStrength;
+                node.vy += (handlerCenter.y - node.y) * clusterStrength;
+            });
+
+            sqlClassNodes.forEach(node => {
+                node.vx += (sqlClassCenter.x - node.x) * clusterStrength;
+                node.vy += (sqlClassCenter.y - node.y) * clusterStrength;
+            });
+        };
+
+        // Custom force to arrange modules radially around root
+        const moduleRadialForce = () => {
+            const modules = dataset.nodes.filter(n => n.type === 'module');
+            const root = dataset.nodes.find(n => n.type === 'root');
+
+            if (!root || modules.length === 0) return;
+
+            const radius = 300; // Distance from root to modules
+            const angleStep = (2 * Math.PI) / modules.length;
+
+            modules.forEach((node, i) => {
+                const targetAngle = i * angleStep;
+                const targetX = root.x + Math.cos(targetAngle) * radius;
+                const targetY = root.y + Math.sin(targetAngle) * radius;
+
+                node.vx += (targetX - node.x) * moduleRadialStrength;
+                node.vy += (targetY - node.y) * moduleRadialStrength;
+            });
+        };
+
+        // Create simulation with type-specific forces
         simulationRef.current = d3.forceSimulation(dataset.nodes)
-            .force("link", d3.forceLink(dataset.links).id(d => d.id).distance(d => (d.len_c) * LINK_DISTANCE))
-            .force("charge", d3.forceManyBody().strength(d => d.strength * NODE_STRENGTH))
-            .force("collision", d3.forceCollide(RADIUS * FORCE_RADIUS_FACTOR))
-            .force("center", d3.forceCenter(width / 2, height / 2).strength(0.02)) // Reduced strength
+            .force("link", d3.forceLink(dataset.links)
+                .id(d => d.id)
+                .distance(d => {
+                    // Longer links for modules to root
+                    if (d.source.type === 'root' || d.target.type === 'root') return 3;
+                    // Shorter links for children
+                    return (d.len_c || 1) * linkDistance;
+                })
+                .strength(d => {
+                    // Weaker links to special types if clustering
+                    if (clusterSpecialTypes && (d.target.type === 'handler' || d.target.type === 'sql_class')) {
+                        return 0.1;
+                    }
+                    return d.strength !== undefined ? d.strength : linkStrength;
+                })
+            )
+            .force("charge", d3.forceManyBody()
+                .strength(d => {
+                    // Stronger repulsion for modules
+                    if (d.type === 'module') return -8;
+                    // Weaker for handler/sql_class if clustering
+                    if (clusterSpecialTypes && (d.type === 'handler' || d.type === 'sql_class')) return -50;
+                    return d.strength * 0.001 || nodeRepulsion;
+                })
+            )
+            .force("collision", d3.forceCollide()
+                .radius(d => {
+                    // Larger collision radius for modules
+                    if (d.type === 'module') return collisionRadius * 0.4;
+                    return collisionRadius;
+                })
+            )
+            .force("center", d3.forceCenter(width / 2, height / 2).strength(centerStrength))
+            .force("moduleRadial", moduleRadialForce)
+            .force("cluster", clusterForce);
 
         // Create separate groups for links and nodes to ensure proper layering
         const linksGroup = gRef.current.selectAll("g.links-group").data([null])
@@ -394,7 +476,12 @@ const GraphPage = () => {
                 .attr("x2", (d) => d.target.x)
                 .attr("y2", (d) => d.target.y)
 
-            nodesSelection.attr("transform", (d) => `translate(${d.x}, ${d.y})`)
+            nodesSelection.attr("transform", (d) => {
+                // Center the 110px wide node on its position
+                const nodeWidth = 110;
+                const nodeHeight = 60; // Approximate height
+                return `translate(${d.x - nodeWidth / 2}, ${d.y - nodeHeight / 2})`;
+            });
         })
 
         nodesSelection.call(d3.drag()
@@ -404,7 +491,7 @@ const GraphPage = () => {
 
         // Reduce initial alpha to make movement smoother
         simulationRef.current.alpha(0.3).restart();
-    }, [dataset, height, width, expandedNodes])
+    }, [dataset, height, width, expandedNodes, clusterSpecialTypes, centerStrength, clusterStrength, moduleRadialStrength, linkDistance, linkStrength, nodeRepulsion, collisionRadius])
 
     function dragstarted(event) {
         if (!event.active) simulationRef.current.alphaTarget(0.3).restart()
@@ -427,7 +514,7 @@ const GraphPage = () => {
         <div style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column" }}>
             {/* Navigation Controls */}
             <div className="nav-controls">
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
                     <input
                         type="file"
                         accept=".json"
@@ -469,6 +556,93 @@ const GraphPage = () => {
                     >
                         Collapse All
                     </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <input
+                            id="clusterToggle"
+                            type="checkbox"
+                            checked={clusterSpecialTypes}
+                            onChange={(e) => setClusterSpecialTypes(e.target.checked)}
+                        />
+                        <label htmlFor="clusterToggle">Cluster Handlers/SQL</label>
+                    </div>
+
+                    {/* Force Parameter Sliders */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <label>Link Distance:</label>
+                        <input
+                            type="range"
+                            min="50"
+                            max="800"
+                            value={linkDistance}
+                            onChange={(e) => setLinkDistance(Number(e.target.value))}
+                        />
+                        <span>{linkDistance}</span>
+
+                        <label>Link Strength:</label>
+                        <input
+                            type="range"
+                            min="0.1"
+                            max="2"
+                            step="0.1"
+                            value={linkStrength}
+                            onChange={(e) => setLinkStrength(Number(e.target.value))}
+                        />
+                        <span>{linkStrength.toFixed(1)}</span>
+
+                        <label>Node Repulsion:</label>
+                        <input
+                            type="range"
+                            min="-50"
+                            max="0"
+                            value={nodeRepulsion}
+                            onChange={(e) => setNodeRepulsion(Number(e.target.value))}
+                        />
+                        <span>{nodeRepulsion}</span>
+
+                        <label>Collision Radius:</label>
+                        <input
+                            type="range"
+                            min="10"
+                            max="200"
+                            value={collisionRadius}
+                            onChange={(e) => setCollisionRadius(Number(e.target.value))}
+                        />
+                        <span>{collisionRadius}</span>
+
+                        <label>Cluster Strength:</label>
+                        <input
+                            type="range"
+                            min="0"
+                            max="0.5"
+                            step="0.01"
+                            value={clusterStrength}
+                            onChange={(e) => setClusterStrength(Number(e.target.value))}
+                        />
+                        <span>{clusterStrength.toFixed(2)}</span>
+
+                        <label>Module Radial:</label>
+                        <input
+                            type="range"
+                            min="0"
+                            max="0.5"
+                            step="0.01"
+                            value={moduleRadialStrength}
+                            onChange={(e) => setModuleRadialStrength(Number(e.target.value))}
+                        />
+                        <span>{moduleRadialStrength.toFixed(2)}</span>
+
+                        <label>Center Strength:</label>
+                        <input
+                            type="range"
+                            min="0"
+                            max="0.1"
+                            step="0.01"
+                            value={centerStrength}
+                            onChange={(e) => setCenterStrength(Number(e.target.value))}
+                        />
+                        <span>{centerStrength.toFixed(2)}</span>
+                    </div>
+
                     <div className="expanded-info">
                         Expanded: {expandedNodes.size} nodes
                     </div>
